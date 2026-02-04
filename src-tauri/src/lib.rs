@@ -1,4 +1,5 @@
 mod categorizer;
+mod commands;
 mod db;
 mod focus;
 mod models;
@@ -72,6 +73,12 @@ pub fn run() {
 
             Ok(())
         })
+        .invoke_handler(tauri::generate_handler![
+            commands::get_today_stats,
+            commands::get_focus_state,
+            commands::start_focus_session,
+            commands::end_focus_session,
+        ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
