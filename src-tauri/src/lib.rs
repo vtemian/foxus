@@ -2,6 +2,7 @@ mod db;
 mod models;
 mod categorizer;
 mod platform;
+mod tracker;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
