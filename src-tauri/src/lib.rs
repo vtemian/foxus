@@ -4,6 +4,7 @@ mod categorizer;
 mod platform;
 mod tracker;
 mod focus;
+mod native_host;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
