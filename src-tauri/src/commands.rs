@@ -65,13 +65,13 @@ pub fn get_today_stats(db: State<Arc<Mutex<Database>>>) -> Result<StatsResponse,
         "SELECT app_name, SUM(duration_secs) as total, c.productivity
          FROM activities a
          LEFT JOIN categories c ON a.category_id = c.id
-         WHERE a.timestamp >= ?1 AND a.app_name IS NOT NULL
+         WHERE a.timestamp >= ?1 AND a.timestamp < ?2 AND a.app_name IS NOT NULL
          GROUP BY app_name
          ORDER BY total DESC
          LIMIT 5"
     ).map_err(|e| e.to_string())?;
 
-    let top_apps: Vec<AppStat> = stmt.query_map([today_start], |row| {
+    let top_apps: Vec<AppStat> = stmt.query_map(rusqlite::params![today_start, now], |row| {
         Ok(AppStat {
             name: row.get(0)?,
             duration_secs: row.get(1)?,
