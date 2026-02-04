@@ -220,18 +220,18 @@ mod tests {
             .find(|c| c.name == "Uncategorized")
             .unwrap();
 
-        // Initially no rules, should return default
-        assert_eq!(categorizer.categorize_app("VSCode", None), uncategorized.id);
+        // "MyNewApp" doesn't match any default rules, should return uncategorized
+        assert_eq!(categorizer.categorize_app("MyNewApp", None), uncategorized.id);
 
-        // Add a rule
+        // Add a rule for MyNewApp
         let coding = Category::find_all(conn).unwrap()
             .into_iter()
             .find(|c| c.name == "Coding")
             .unwrap();
-        Rule::create(conn, "vscode", "app", coding.id, 10).unwrap();
+        Rule::create(conn, "mynewapp", "app", coding.id, 10).unwrap();
 
         // Reload and check new rule is applied
         categorizer.reload(conn).unwrap();
-        assert_eq!(categorizer.categorize_app("VSCode", None), coding.id);
+        assert_eq!(categorizer.categorize_app("MyNewApp", None), coding.id);
     }
 }

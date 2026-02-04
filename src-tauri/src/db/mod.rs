@@ -108,4 +108,66 @@ mod tests {
             .unwrap();
         assert_eq!(count, 5, "Running migrations twice should not duplicate categories");
     }
+
+    #[test]
+    fn test_default_rules_seeded() {
+        let dir = tempdir().unwrap();
+        let db_path = dir.path().join("test.db");
+        let db = Database::open(&db_path).unwrap();
+        migrations::run(db.connection()).unwrap();
+
+        // Verify default rules are seeded
+        let count: i32 = db.connection()
+            .query_row("SELECT COUNT(*) FROM rules", [], |row| row.get(0))
+            .unwrap();
+        assert!(count > 0, "Should have default rules seeded");
+
+        // Verify a specific coding rule exists - e.g., "code" app pattern
+        let code_rule_exists: i32 = db.connection()
+            .query_row(
+                "SELECT COUNT(*) FROM rules r
+                 JOIN categories c ON r.category_id = c.id
+                 WHERE r.pattern = 'code' AND r.match_type = 'app' AND c.name = 'Coding'",
+                [],
+                |row| row.get(0)
+            ).unwrap();
+        assert_eq!(code_rule_exists, 1, "Should have 'code' app rule for Coding category");
+
+        // Verify a domain rule exists - e.g., youtube.com for Entertainment
+        let youtube_rule_exists: i32 = db.connection()
+            .query_row(
+                "SELECT COUNT(*) FROM rules r
+                 JOIN categories c ON r.category_id = c.id
+                 WHERE r.pattern = 'youtube.com' AND r.match_type = 'domain' AND c.name = 'Entertainment'",
+                [],
+                |row| row.get(0)
+            ).unwrap();
+        assert_eq!(youtube_rule_exists, 1, "Should have youtube.com domain rule for Entertainment category");
+
+        // Verify all rules have priority 10
+        let non_priority_10_count: i32 = db.connection()
+            .query_row("SELECT COUNT(*) FROM rules WHERE priority != 10", [], |row| row.get(0))
+            .unwrap();
+        assert_eq!(non_priority_10_count, 0, "All default rules should have priority 10");
+    }
+
+    #[test]
+    fn test_default_rules_not_duplicated_on_rerun() {
+        let dir = tempdir().unwrap();
+        let db_path = dir.path().join("test.db");
+        let db = Database::open(&db_path).unwrap();
+
+        // Run migrations twice
+        migrations::run(db.connection()).unwrap();
+        let count_after_first: i32 = db.connection()
+            .query_row("SELECT COUNT(*) FROM rules", [], |row| row.get(0))
+            .unwrap();
+
+        migrations::run(db.connection()).unwrap();
+        let count_after_second: i32 = db.connection()
+            .query_row("SELECT COUNT(*) FROM rules", [], |row| row.get(0))
+            .unwrap();
+
+        assert_eq!(count_after_first, count_after_second, "Running migrations twice should not duplicate rules");
+    }
 }

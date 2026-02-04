@@ -54,10 +54,17 @@ mod tests {
     }
 
     #[test]
-    fn test_find_all_returns_empty_when_no_rules() {
+    fn test_find_all_returns_default_rules() {
         let (db, _dir) = setup_db();
         let rules = Rule::find_all(db.connection()).unwrap();
-        assert!(rules.is_empty());
+        // After migrations, we should have default rules seeded
+        assert!(!rules.is_empty(), "Should have default rules after migrations");
+
+        // Verify some specific default rules exist
+        assert!(rules.iter().any(|r| r.pattern == "code" && r.match_type == "app"),
+            "Should have 'code' app rule");
+        assert!(rules.iter().any(|r| r.pattern == "youtube.com" && r.match_type == "domain"),
+            "Should have 'youtube.com' domain rule");
     }
 
     #[test]
@@ -88,15 +95,20 @@ mod tests {
             .find(|c| c.name == "Coding")
             .unwrap();
 
+        // Add rules with different priorities
         Rule::create(conn, "low_priority", "app", coding.id, 5).unwrap();
         Rule::create(conn, "high_priority", "app", coding.id, 20).unwrap();
-        Rule::create(conn, "medium_priority", "app", coding.id, 10).unwrap();
 
         let rules = Rule::find_all(conn).unwrap();
 
-        assert_eq!(rules.len(), 3);
-        assert_eq!(rules[0].pattern, "high_priority");
-        assert_eq!(rules[1].pattern, "medium_priority");
-        assert_eq!(rules[2].pattern, "low_priority");
+        // Verify ordering: highest priority first
+        // high_priority (20) should come before default rules (10) and low_priority (5)
+        assert_eq!(rules[0].pattern, "high_priority", "Highest priority rule should be first");
+        assert_eq!(rules[0].priority, 20);
+
+        // low_priority should be last
+        let last_rule = rules.last().unwrap();
+        assert_eq!(last_rule.pattern, "low_priority", "Lowest priority rule should be last");
+        assert_eq!(last_rule.priority, 5);
     }
 }
