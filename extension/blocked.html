@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Site Blocked - Foxus</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+    }
+    .container {
+      text-align: center;
+      padding: 40px;
+      max-width: 500px;
+    }
+    .icon { font-size: 64px; margin-bottom: 20px; }
+    h1 { font-size: 28px; margin-bottom: 10px; }
+    .domain { font-size: 18px; opacity: 0.9; margin-bottom: 30px; }
+    .budget {
+      background: rgba(255,255,255,0.2);
+      padding: 20px;
+      border-radius: 12px;
+      margin-bottom: 30px;
+    }
+    .budget-label { font-size: 14px; opacity: 0.8; }
+    .budget-time { font-size: 32px; font-weight: bold; }
+    .btn {
+      background: white;
+      color: #667eea;
+      border: none;
+      padding: 16px 32px;
+      font-size: 16px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 600;
+      transition: transform 0.2s;
+    }
+    .btn:hover { transform: scale(1.05); }
+    .btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none;
+    }
+    .countdown {
+      margin-top: 20px;
+      font-size: 14px;
+      opacity: 0.8;
+    }
+    .hard-blocked {
+      background: rgba(255,0,0,0.2);
+      padding: 20px;
+      border-radius: 12px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="icon">&#127919;</div>
+    <h1>Focus Mode Active</h1>
+    <div class="domain" id="domain"></div>
+
+    <div id="soft-block">
+      <div class="budget">
+        <div class="budget-label">Distraction budget remaining</div>
+        <div class="budget-time" id="budget-time">--:--</div>
+      </div>
+      <button class="btn" id="use-budget-btn">Use distraction time</button>
+      <div class="countdown" id="countdown" style="display: none;">
+        Redirecting in <span id="countdown-time">30</span> seconds...
+      </div>
+    </div>
+
+    <div id="hard-block" class="hard-blocked" style="display: none;">
+      <p>Your distraction budget is exhausted.</p>
+      <p style="margin-top: 10px;">Stay focused! You've got this.</p>
+    </div>
+  </div>
+  <script src="blocked.js"></script>
+</body>
+</html>
