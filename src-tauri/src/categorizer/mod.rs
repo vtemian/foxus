@@ -1,4 +1,4 @@
-use crate::models::{Category, Rule};
+use crate::models::{Category, MatchType, Rule};
 use rusqlite::Connection;
 
 pub struct Categorizer {
@@ -34,10 +34,10 @@ impl Categorizer {
 
     pub fn categorize_app(&self, app_name: &str, window_title: Option<&str>) -> i64 {
         for (rule, _category) in &self.rules {
-            let matches = match rule.match_type.as_str() {
-                "app" => Self::pattern_matches(&rule.pattern, app_name),
-                "title" => window_title.map(|t| Self::pattern_matches(&rule.pattern, t)).unwrap_or(false),
-                _ => false,
+            let matches = match rule.match_type {
+                MatchType::App => Self::pattern_matches(&rule.pattern, app_name),
+                MatchType::Title => window_title.map(|t| Self::pattern_matches(&rule.pattern, t)).unwrap_or(false),
+                MatchType::Domain => false,
             };
 
             if matches {
@@ -50,7 +50,7 @@ impl Categorizer {
 
     pub fn categorize_url(&self, domain: &str) -> i64 {
         for (rule, _category) in &self.rules {
-            if rule.match_type == "domain" && Self::pattern_matches(&rule.pattern, domain) {
+            if rule.match_type == MatchType::Domain && Self::pattern_matches(&rule.pattern, domain) {
                 return rule.category_id;
             }
         }
@@ -124,7 +124,7 @@ mod tests {
             .find(|c| c.name == "Coding")
             .unwrap();
 
-        Rule::create(conn, "code", "app", coding.id, 10).unwrap();
+        Rule::create(conn, "code", MatchType::App, coding.id, 10).unwrap();
 
         let categorizer = Categorizer::new(conn).unwrap();
         let category_id = categorizer.categorize_app("Visual Studio Code", None);
@@ -142,7 +142,7 @@ mod tests {
             .find(|c| c.name == "Entertainment")
             .unwrap();
 
-        Rule::create(conn, "reddit.com", "domain", entertainment.id, 10).unwrap();
+        Rule::create(conn, "reddit.com", MatchType::Domain, entertainment.id, 10).unwrap();
 
         let categorizer = Categorizer::new(conn).unwrap();
         let category_id = categorizer.categorize_url("reddit.com");
@@ -160,7 +160,7 @@ mod tests {
             .find(|c| c.name == "Coding")
             .unwrap();
 
-        Rule::create(conn, "*.github.*", "domain", coding.id, 10).unwrap();
+        Rule::create(conn, "*.github.*", MatchType::Domain, coding.id, 10).unwrap();
 
         let categorizer = Categorizer::new(conn).unwrap();
 
@@ -191,7 +191,7 @@ mod tests {
             .find(|c| c.name == "Coding")
             .unwrap();
 
-        Rule::create(conn, "pull request", "title", coding.id, 10).unwrap();
+        Rule::create(conn, "pull request", MatchType::Title, coding.id, 10).unwrap();
 
         let categorizer = Categorizer::new(conn).unwrap();
 
@@ -228,7 +228,7 @@ mod tests {
             .into_iter()
             .find(|c| c.name == "Coding")
             .unwrap();
-        Rule::create(conn, "mynewapp", "app", coding.id, 10).unwrap();
+        Rule::create(conn, "mynewapp", MatchType::App, coding.id, 10).unwrap();
 
         // Reload and check new rule is applied
         categorizer.reload(conn).unwrap();
@@ -246,9 +246,9 @@ mod tests {
 
         // Use app names that don't conflict with default rules
         // Lower priority rule matches broadly (any app containing "editor")
-        Rule::create(conn, "editor", "app", entertainment.id, 5).unwrap();
+        Rule::create(conn, "editor", MatchType::App, entertainment.id, 5).unwrap();
         // Higher priority rule matches more specifically "fancy editor"
-        Rule::create(conn, "fancy editor", "app", coding.id, 20).unwrap();
+        Rule::create(conn, "fancy editor", MatchType::App, coding.id, 20).unwrap();
 
         let categorizer = Categorizer::new(conn).unwrap();
 

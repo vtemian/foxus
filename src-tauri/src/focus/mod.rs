@@ -3,12 +3,14 @@ use crate::models::FocusSession;
 use log::warn;
 use rusqlite::Connection;
 use std::sync::{Arc, Mutex, MutexGuard};
+use std::time::{SystemTime, UNIX_EPOCH};
 
 #[derive(Debug, Clone)]
 pub struct FocusState {
     pub active: bool,
     pub budget_remaining: i32,
     pub blocked_domains: Vec<String>,
+    pub session_duration_secs: Option<i64>,
 }
 
 pub struct FocusManager {
@@ -64,10 +66,23 @@ impl FocusManager {
         let session = FocusSession::find_active(conn)?;
         let blocked_domains = self.get_blocked_domains(conn)?;
 
+        let (active, budget_remaining, session_duration_secs) = match session {
+            Some(s) => {
+                let now = SystemTime::now()
+                    .duration_since(UNIX_EPOCH)
+                    .expect("System clock is before Unix epoch")
+                    .as_secs() as i64;
+                let duration = (now - s.started_at).max(0);
+                (true, s.budget_remaining(), Some(duration))
+            }
+            None => (false, 0, None),
+        };
+
         Ok(FocusState {
-            active: session.is_some(),
-            budget_remaining: session.map(|s| s.budget_remaining()).unwrap_or(0),
+            active,
+            budget_remaining,
             blocked_domains,
+            session_duration_secs,
         })
     }
 
@@ -112,7 +127,7 @@ impl FocusManager {
 mod tests {
     use super::*;
     use crate::db::migrations;
-    use crate::models::{Category, Rule};
+    use crate::models::{Category, Rule, MatchType};
     use tempfile::{tempdir, TempDir};
 
     fn setup() -> (Arc<Mutex<Database>>, TempDir) {
@@ -170,7 +185,7 @@ mod tests {
                 .into_iter()
                 .find(|c| c.name == "Entertainment")
                 .unwrap();
-            Rule::create(conn, "reddit.com", "domain", entertainment.id, 10).unwrap();
+            Rule::create(conn, "reddit.com", MatchType::Domain, entertainment.id, 10).unwrap();
         }
 
         let manager = FocusManager::new(Arc::clone(&db));
@@ -186,5 +201,47 @@ mod tests {
 
         // Other domains not blocked
         assert!(!manager.is_domain_blocked("github.com").unwrap());
+    }
+
+    #[test]
+    fn test_session_duration_none_when_inactive() {
+        let (db, _dir) = setup();
+        let manager = FocusManager::new(Arc::clone(&db));
+
+        let state = manager.get_state().unwrap();
+        assert!(!state.active);
+        assert!(state.session_duration_secs.is_none());
+    }
+
+    #[test]
+    fn test_session_duration_calculated_when_active() {
+        let (db, _dir) = setup();
+        let manager = FocusManager::new(Arc::clone(&db));
+
+        manager.start_session(600).unwrap();
+
+        let state = manager.get_state().unwrap();
+        assert!(state.active);
+        assert!(state.session_duration_secs.is_some());
+        // Duration should be very small (close to 0) since we just started
+        let duration = state.session_duration_secs.unwrap();
+        assert!(duration >= 0, "Duration should be non-negative");
+        assert!(duration < 5, "Duration should be small for a just-started session");
+    }
+
+    #[test]
+    fn test_session_duration_none_after_end() {
+        let (db, _dir) = setup();
+        let manager = FocusManager::new(Arc::clone(&db));
+
+        manager.start_session(600).unwrap();
+        let state = manager.get_state().unwrap();
+        assert!(state.session_duration_secs.is_some());
+
+        manager.end_session().unwrap();
+
+        let state = manager.get_state().unwrap();
+        assert!(!state.active);
+        assert!(state.session_duration_secs.is_none());
     }
 }

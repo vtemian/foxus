@@ -1,6 +1,40 @@
 use super::{ActiveWindow, PlatformTracker};
 use core_graphics::base::CGFloat;
 use objc2_app_kit::NSWorkspace;
+use std::sync::Mutex;
+use std::time::{Duration, Instant};
+
+/// Cache for window title to avoid spawning osascript subprocess on every call.
+/// The subprocess takes ~50-100ms, so we cache results for 1 second.
+struct WindowTitleCache {
+    title: Option<String>,
+    last_updated: Option<Instant>,
+}
+
+impl WindowTitleCache {
+    const TTL: Duration = Duration::from_secs(1);
+
+    fn new() -> Self {
+        Self {
+            title: None,
+            last_updated: None,
+        }
+    }
+
+    fn get(&self) -> Option<&Option<String>> {
+        match self.last_updated {
+            Some(t) if t.elapsed() < Self::TTL => Some(&self.title),
+            _ => None,
+        }
+    }
+
+    fn set(&mut self, title: Option<String>) {
+        self.title = title;
+        self.last_updated = Some(Instant::now());
+    }
+}
+
+static WINDOW_TITLE_CACHE: Mutex<Option<WindowTitleCache>> = Mutex::new(None);
 
 pub struct MacOSTracker;
 
@@ -70,16 +104,40 @@ fn get_idle_time_secs_internal() -> u64 {
     idle_secs.max(0.0) as u64
 }
 
-/// Get window title using AppleScript.
+/// Get window title using AppleScript with caching.
 ///
-/// PERFORMANCE NOTE: This spawns a subprocess on every call, which takes ~50-100ms.
-/// For high-frequency polling, consider caching results or using accessibility APIs
-/// (requires entitlements and user permission).
+/// This spawns a subprocess which takes ~50-100ms, so results are cached
+/// for 1 second to avoid excessive overhead when polling frequently.
 ///
 /// The AppleScript approach works without accessibility permissions but is slow.
 /// A better long-term solution would use the Accessibility API (AXUIElement) which
 /// requires adding the accessibility entitlement and requesting user permission.
 fn get_window_title() -> Option<String> {
+    // Check cache first
+    {
+        let guard = WINDOW_TITLE_CACHE.lock().unwrap();
+        if let Some(cache) = guard.as_ref() {
+            if let Some(cached_title) = cache.get() {
+                return cached_title.clone();
+            }
+        }
+    }
+
+    // Cache miss - fetch fresh title
+    let title = fetch_window_title_uncached();
+
+    // Update cache
+    {
+        let mut guard = WINDOW_TITLE_CACHE.lock().unwrap();
+        let cache = guard.get_or_insert_with(WindowTitleCache::new);
+        cache.set(title.clone());
+    }
+
+    title
+}
+
+/// Fetch window title from osascript without caching.
+fn fetch_window_title_uncached() -> Option<String> {
     let output = std::process::Command::new("osascript")
         .arg("-e")
         .arg(r#"tell application "System Events" to get name of first window of (first application process whose frontmost is true)"#)

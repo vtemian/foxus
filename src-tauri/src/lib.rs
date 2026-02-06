@@ -1,9 +1,9 @@
-mod categorizer;
+pub mod categorizer;
 mod commands;
-mod db;
-mod focus;
+pub mod db;
+pub mod focus;
 mod models;
-mod native_host;
+pub mod native_host;
 mod platform;
 mod tracker;
 

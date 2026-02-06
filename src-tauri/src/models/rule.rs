@@ -1,10 +1,36 @@
 use rusqlite::{Connection, Result, params};
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum MatchType {
+    App,
+    Domain,
+    Title,
+}
+
+impl MatchType {
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            MatchType::App => "app",
+            MatchType::Domain => "domain",
+            MatchType::Title => "title",
+        }
+    }
+
+    pub fn from_str(s: &str) -> Option<Self> {
+        match s {
+            "app" => Some(MatchType::App),
+            "domain" => Some(MatchType::Domain),
+            "title" => Some(MatchType::Title),
+            _ => None,
+        }
+    }
+}
+
 #[derive(Debug, Clone)]
 pub struct Rule {
     pub id: i64,
     pub pattern: String,
-    pub match_type: String,
+    pub match_type: MatchType,
     pub category_id: i64,
     pub priority: i32,
 }
@@ -16,10 +42,13 @@ impl Rule {
         )?;
 
         let rows = stmt.query_map([], |row| {
+            let match_type_str: String = row.get(2)?;
+            let match_type = MatchType::from_str(&match_type_str)
+                .unwrap_or(MatchType::App); // Default to App for unknown types
             Ok(Self {
                 id: row.get(0)?,
                 pattern: row.get(1)?,
-                match_type: row.get(2)?,
+                match_type,
                 category_id: row.get(3)?,
                 priority: row.get(4)?,
             })
@@ -28,13 +57,13 @@ impl Rule {
         rows.collect()
     }
 
-    pub fn create(conn: &Connection, pattern: &str, match_type: &str, category_id: i64, priority: i32) -> Result<Self> {
+    pub fn create(conn: &Connection, pattern: &str, match_type: MatchType, category_id: i64, priority: i32) -> Result<Self> {
         conn.execute(
             "INSERT INTO rules (pattern, match_type, category_id, priority) VALUES (?1, ?2, ?3, ?4)",
-            params![pattern, match_type, category_id, priority],
+            params![pattern, match_type.as_str(), category_id, priority],
         )?;
         let id = conn.last_insert_rowid();
-        Ok(Self { id, pattern: pattern.to_string(), match_type: match_type.to_string(), category_id, priority })
+        Ok(Self { id, pattern: pattern.to_string(), match_type, category_id, priority })
     }
 }
 
@@ -61,9 +90,9 @@ mod tests {
         assert!(!rules.is_empty(), "Should have default rules after migrations");
 
         // Verify some specific default rules exist
-        assert!(rules.iter().any(|r| r.pattern == "code" && r.match_type == "app"),
+        assert!(rules.iter().any(|r| r.pattern == "code" && r.match_type == MatchType::App),
             "Should have 'code' app rule");
-        assert!(rules.iter().any(|r| r.pattern == "youtube.com" && r.match_type == "domain"),
+        assert!(rules.iter().any(|r| r.pattern == "youtube.com" && r.match_type == MatchType::Domain),
             "Should have 'youtube.com' domain rule");
     }
 
@@ -77,10 +106,10 @@ mod tests {
             .find(|c| c.name == "Coding")
             .unwrap();
 
-        let rule = Rule::create(conn, "code", "app", coding.id, 10).unwrap();
+        let rule = Rule::create(conn, "code", MatchType::App, coding.id, 10).unwrap();
 
         assert_eq!(rule.pattern, "code");
-        assert_eq!(rule.match_type, "app");
+        assert_eq!(rule.match_type, MatchType::App);
         assert_eq!(rule.category_id, coding.id);
         assert_eq!(rule.priority, 10);
     }
@@ -96,8 +125,8 @@ mod tests {
             .unwrap();
 
         // Add rules with different priorities
-        Rule::create(conn, "low_priority", "app", coding.id, 5).unwrap();
-        Rule::create(conn, "high_priority", "app", coding.id, 20).unwrap();
+        Rule::create(conn, "low_priority", MatchType::App, coding.id, 5).unwrap();
+        Rule::create(conn, "high_priority", MatchType::App, coding.id, 20).unwrap();
 
         let rules = Rule::find_all(conn).unwrap();
 
@@ -110,5 +139,28 @@ mod tests {
         let last_rule = rules.last().unwrap();
         assert_eq!(last_rule.pattern, "low_priority", "Lowest priority rule should be last");
         assert_eq!(last_rule.priority, 5);
+    }
+
+    #[test]
+    fn test_match_type_as_str() {
+        assert_eq!(MatchType::App.as_str(), "app");
+        assert_eq!(MatchType::Domain.as_str(), "domain");
+        assert_eq!(MatchType::Title.as_str(), "title");
+    }
+
+    #[test]
+    fn test_match_type_from_str() {
+        assert_eq!(MatchType::from_str("app"), Some(MatchType::App));
+        assert_eq!(MatchType::from_str("domain"), Some(MatchType::Domain));
+        assert_eq!(MatchType::from_str("title"), Some(MatchType::Title));
+        assert_eq!(MatchType::from_str("invalid"), None);
+        assert_eq!(MatchType::from_str(""), None);
+    }
+
+    #[test]
+    fn test_match_type_roundtrip() {
+        for mt in [MatchType::App, MatchType::Domain, MatchType::Title] {
+            assert_eq!(MatchType::from_str(mt.as_str()), Some(mt));
+        }
     }
 }

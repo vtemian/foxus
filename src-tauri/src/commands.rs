@@ -118,7 +118,7 @@ pub fn get_focus_state(focus_manager: State<Arc<FocusManager>>) -> Result<FocusS
     Ok(FocusStateResponse {
         active: state.active,
         budget_remaining: state.budget_remaining,
-        session_duration_secs: None, // TODO: calculate from session start
+        session_duration_secs: state.session_duration_secs,
     })
 }
 
