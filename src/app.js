@@ -1,4 +1,15 @@
-const { invoke } = window.__TAURI__.core;
+// Safely access Tauri API with fallback for browser dev mode
+const invoke = window.__TAURI__?.core?.invoke;
+
+if (!invoke) {
+  console.warn("Tauri API not available - running in browser mode");
+}
+
+function escapeHtml(text) {
+  const div = document.createElement("div");
+  div.textContent = text;
+  return div.innerHTML;
+}
 
 function formatTime(secs) {
   const hours = Math.floor(secs / 3600);
@@ -13,11 +24,12 @@ function formatBudget(secs) {
 }
 
 async function loadStats() {
+  if (!invoke) return;
+
   try {
     const stats = await invoke("get_today_stats");
 
     const total = stats.productive_secs + stats.neutral_secs + stats.distracting_secs;
-    const maxPercent = total > 0 ? 100 : 0;
 
     document.getElementById("bar-productive").style.width =
       total > 0 ? `${(stats.productive_secs / total) * 100}%` : "0%";
@@ -34,11 +46,12 @@ async function loadStats() {
     appList.innerHTML = stats.top_apps.map(app => {
       const prodClass = app.productivity > 0 ? "productive" :
                         app.productivity < 0 ? "distracting" : "neutral";
+      const safeName = escapeHtml(app.name);
       return `
         <li>
           <span class="app-name">
             <span class="productivity-dot ${prodClass}"></span>
-            ${app.name}
+            ${safeName}
           </span>
           <span>${formatTime(app.duration_secs)}</span>
         </li>
@@ -50,6 +63,8 @@ async function loadStats() {
 }
 
 async function loadFocusState() {
+  if (!invoke) return;
+
   try {
     const state = await invoke("get_focus_state");
     const btn = document.getElementById("focus-btn");
@@ -61,19 +76,23 @@ async function loadFocusState() {
       focusView.style.display = "block";
       btn.textContent = "End Focus Session";
       btn.classList.add("active");
+      btn.setAttribute("aria-pressed", "true");
       document.getElementById("budget-time").textContent = formatBudget(state.budget_remaining);
     } else {
       statsView.style.display = "block";
       focusView.style.display = "none";
       btn.textContent = "Start Focus Session";
       btn.classList.remove("active");
+      btn.setAttribute("aria-pressed", "false");
     }
   } catch (e) {
     console.error("Failed to load focus state:", e);
   }
 }
 
-document.getElementById("focus-btn").addEventListener("click", async () => {
+async function toggleFocusSession() {
+  if (!invoke) return;
+
   try {
     const state = await invoke("get_focus_state");
     if (state.active) {
@@ -86,14 +105,19 @@ document.getElementById("focus-btn").addEventListener("click", async () => {
   } catch (e) {
     console.error("Failed to toggle focus:", e);
   }
-});
+}
 
-// Initial load
-loadStats();
-loadFocusState();
+// Initialize when DOM is ready
+document.addEventListener("DOMContentLoaded", () => {
+  document.getElementById("focus-btn").addEventListener("click", toggleFocusSession);
 
-// Refresh periodically
-setInterval(() => {
+  // Initial load
   loadStats();
   loadFocusState();
-}, 5000);
+
+  // Refresh periodically
+  setInterval(() => {
+    loadStats();
+    loadFocusState();
+  }, 5000);
+});
