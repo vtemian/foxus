@@ -1,7 +1,7 @@
 pub const SCHEMA: &str = r#"
 CREATE TABLE IF NOT EXISTS categories (
     id INTEGER PRIMARY KEY,
-    name TEXT NOT NULL,
+    name TEXT NOT NULL UNIQUE,
     productivity INTEGER NOT NULL
 );
 
@@ -9,7 +9,7 @@ CREATE TABLE IF NOT EXISTS rules (
     id INTEGER PRIMARY KEY,
     pattern TEXT NOT NULL,
     match_type TEXT NOT NULL,
-    category_id INTEGER REFERENCES categories(id),
+    category_id INTEGER NOT NULL REFERENCES categories(id) ON DELETE CASCADE,
     priority INTEGER DEFAULT 0
 );
 
@@ -22,7 +22,7 @@ CREATE TABLE IF NOT EXISTS activities (
     window_title TEXT,
     url TEXT,
     domain TEXT,
-    category_id INTEGER REFERENCES categories(id)
+    category_id INTEGER REFERENCES categories(id) ON DELETE SET NULL
 );
 
 CREATE TABLE IF NOT EXISTS focus_sessions (
