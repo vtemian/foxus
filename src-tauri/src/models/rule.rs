@@ -8,6 +8,9 @@ pub enum MatchType {
 }
 
 impl MatchType {
+    /// Convert to string representation for database storage.
+    /// Used by Rule::create and in tests.
+    #[allow(dead_code)]
     pub fn as_str(&self) -> &'static str {
         match self {
             MatchType::App => "app",
@@ -26,7 +29,11 @@ impl MatchType {
     }
 }
 
+/// A rule for categorizing activities based on patterns.
+/// Fields `id` and `priority` are read from the database and used in tests;
+/// kept as part of the public API for future use (e.g., rule editing UI).
 #[derive(Debug, Clone)]
+#[allow(dead_code)]
 pub struct Rule {
     pub id: i64,
     pub pattern: String,
@@ -57,6 +64,9 @@ impl Rule {
         rows.collect()
     }
 
+    /// Create a new rule.
+    /// Currently used in tests; kept as part of the public API for future use.
+    #[allow(dead_code)]
     pub fn create(conn: &Connection, pattern: &str, match_type: MatchType, category_id: i64, priority: i32) -> Result<Self> {
         conn.execute(
             "INSERT INTO rules (pattern, match_type, category_id, priority) VALUES (?1, ?2, ?3, ?4)",

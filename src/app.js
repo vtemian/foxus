@@ -1,6 +1,10 @@
 // Safely access Tauri API with fallback for browser dev mode
 const invoke = window.__TAURI__?.core?.invoke;
 
+// Default distraction budget for focus sessions (in minutes)
+// TODO: Add UI to allow user to configure this value
+const DEFAULT_BUDGET_MINUTES = 10;
+
 if (!invoke) {
   console.warn("Tauri API not available - running in browser mode");
 }
@@ -98,7 +102,7 @@ async function toggleFocusSession() {
     if (state.active) {
       await invoke("end_focus_session");
     } else {
-      await invoke("start_focus_session", { budgetMinutes: 10 });
+      await invoke("start_focus_session", { budgetMinutes: DEFAULT_BUDGET_MINUTES });
     }
     loadFocusState();
     loadStats();
@@ -115,9 +119,15 @@ document.addEventListener("DOMContentLoaded", () => {
   loadStats();
   loadFocusState();
 
-  // Refresh periodically
-  setInterval(() => {
-    loadStats();
-    loadFocusState();
+  // Refresh periodically with guard against overlapping calls
+  let refreshInProgress = false;
+  setInterval(async () => {
+    if (refreshInProgress) return;
+    refreshInProgress = true;
+    try {
+      await Promise.all([loadStats(), loadFocusState()]);
+    } finally {
+      refreshInProgress = false;
+    }
   }, 5000);
 });

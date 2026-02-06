@@ -87,6 +87,10 @@ function scheduleReconnect() {
 
 function loadCachedState() {
   chrome.storage.local.get(["focusState"], (result) => {
+    if (chrome.runtime.lastError) {
+      console.error("Failed to load cached state:", chrome.runtime.lastError.message);
+      return;
+    }
     if (result.focusState) {
       focusState = result.focusState;
     }
@@ -111,7 +115,9 @@ function isDomainBlocked(url) {
     const domain = new URL(url).hostname;
     return focusState.blockedDomains.some(blocked => {
       if (blocked.startsWith("*.")) {
-        return domain.endsWith(blocked.slice(1));
+        // *.example.com should match sub.example.com but not notexample.com
+        const suffix = blocked.slice(1); // .example.com
+        return domain.endsWith(suffix) && (domain.length === suffix.length - 1 || domain[domain.length - suffix.length - 1] === ".");
       }
       return domain === blocked || domain.endsWith("." + blocked);
     });

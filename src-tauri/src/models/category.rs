@@ -8,6 +8,9 @@ pub struct Category {
 }
 
 impl Category {
+    /// Find a category by its ID.
+    /// Currently used in tests; kept as part of the public API for future use.
+    #[allow(dead_code)]
     pub fn find_by_id(conn: &Connection, id: i64) -> Result<Option<Self>> {
         let mut stmt = conn.prepare("SELECT id, name, productivity FROM categories WHERE id = ?1")?;
         let mut rows = stmt.query(params![id])?;
@@ -36,6 +39,9 @@ impl Category {
         rows.collect()
     }
 
+    /// Create a new category.
+    /// Currently used in tests; kept as part of the public API for future use.
+    #[allow(dead_code)]
     pub fn create(conn: &Connection, name: &str, productivity: i32) -> Result<Self> {
         conn.execute(
             "INSERT INTO categories (name, productivity) VALUES (?1, ?2)",

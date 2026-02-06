@@ -53,6 +53,9 @@ impl Activity {
         Ok(())
     }
 
+    /// Find activities within a time range.
+    /// Currently used in tests; kept as part of the public API for future use.
+    #[allow(dead_code)]
     pub fn find_in_range(conn: &Connection, start: i64, end: i64) -> Result<Vec<Self>> {
         let mut stmt = conn.prepare(
             "SELECT id, timestamp, duration_secs, source, app_name, window_title, url, domain, category_id

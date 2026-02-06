@@ -46,7 +46,7 @@ impl Default for MacOSTracker {
 
 impl MacOSTracker {
     pub fn new() -> Self {
-        Self::default()
+        Self
     }
 }
 

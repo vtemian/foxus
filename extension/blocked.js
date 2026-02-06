@@ -25,8 +25,10 @@ const validUrl = isValidHttpUrl(blockedUrl);
 document.getElementById("domain").textContent = validUrl ? getHostname(blockedUrl) : "Unknown site";
 
 function formatTime(secs) {
-  const mins = Math.floor(secs / 60);
-  const s = secs % 60;
+  // Ensure input is a valid number to prevent issues with non-numeric input
+  const safeSecs = Math.max(0, Math.floor(Number(secs) || 0));
+  const mins = Math.floor(safeSecs / 60);
+  const s = safeSecs % 60;
   return `${mins}:${s.toString().padStart(2, "0")}`;
 }
 

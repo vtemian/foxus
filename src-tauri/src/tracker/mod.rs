@@ -102,6 +102,9 @@ impl TrackerService {
         self.running.store(false, Ordering::SeqCst);
     }
 
+    /// Check if the tracker is currently running.
+    /// Currently used in tests; kept as part of the public API for UI status display.
+    #[allow(dead_code)]
     pub fn is_running(&self) -> bool {
         self.running.load(Ordering::SeqCst)
     }
