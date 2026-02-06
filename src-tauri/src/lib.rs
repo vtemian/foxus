@@ -13,11 +13,15 @@ use crate::focus::FocusManager;
 use crate::tracker::{TrackerConfig, TrackerService};
 use directories::ProjectDirs;
 use std::sync::{Arc, Mutex};
+use std::thread::JoinHandle;
 use tauri::{
     menu::{Menu, MenuItem},
     tray::TrayIconBuilder,
     Manager,
 };
+
+/// Holds the tracker thread handle for graceful shutdown
+pub struct TrackerHandle(Mutex<Option<JoinHandle<()>>>);
 
 fn get_db_path() -> std::path::PathBuf {
     let proj_dirs = ProjectDirs::from("com", "foxus", "Foxus")
@@ -48,14 +52,16 @@ pub fn run() {
                 Arc::clone(&categorizer),
                 TrackerConfig::default(),
             );
-            tracker.start();
+            let handle = tracker.start();
             let tracker = Arc::new(tracker);
+            let tracker_handle = TrackerHandle(Mutex::new(Some(handle)));
 
             // Store in app state
             app.manage(db);
             app.manage(categorizer);
             app.manage(focus_manager);
             app.manage(tracker);
+            app.manage(tracker_handle);
 
             // Setup tray
             let quit = MenuItem::with_id(app, "quit", "Quit Foxus", true, None::<&str>)?;
@@ -66,6 +72,18 @@ pub fn run() {
                 .tooltip("Foxus")
                 .on_menu_event(|app, event| {
                     if event.id == "quit" {
+                        // Gracefully stop the tracker before exiting
+                        if let Some(tracker) = app.try_state::<Arc<TrackerService>>() {
+                            tracker.stop();
+                        }
+                        if let Some(handle_state) = app.try_state::<TrackerHandle>() {
+                            if let Ok(mut guard) = handle_state.0.lock() {
+                                if let Some(handle) = guard.take() {
+                                    // Wait for tracker thread to finish (with timeout behavior from thread)
+                                    let _ = handle.join();
+                                }
+                            }
+                        }
                         app.exit(0);
                     }
                 })

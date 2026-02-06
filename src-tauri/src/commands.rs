@@ -35,7 +35,7 @@ pub fn get_today_stats(db: State<Arc<Mutex<Database>>>) -> Result<StatsResponse,
 
     let now = SystemTime::now()
         .duration_since(UNIX_EPOCH)
-        .unwrap()
+        .map_err(|e| format!("System time error: {}", e))?
         .as_secs() as i64;
 
     // Start of today (midnight)
