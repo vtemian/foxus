@@ -1,4 +1,6 @@
 const NATIVE_HOST = "com.foxus.native";
+const MAX_RECONNECT_ATTEMPTS = 10;
+const INITIAL_RECONNECT_DELAY = 1000;
 
 let focusState = {
   active: false,
@@ -7,44 +9,88 @@ let focusState = {
 };
 
 let nativePort = null;
+let reconnectAttempts = 0;
+let reconnectTimeoutId = null;
+
+function validateStateMessage(message) {
+  return (
+    message &&
+    typeof message === "object" &&
+    typeof message.focusActive === "boolean" &&
+    typeof message.budgetRemaining === "number" &&
+    (message.blockedDomains === undefined || Array.isArray(message.blockedDomains))
+  );
+}
+
+function validateBudgetMessage(message) {
+  return (
+    message &&
+    typeof message === "object" &&
+    typeof message.remaining === "number"
+  );
+}
 
 function connectToNative() {
+  if (reconnectTimeoutId) {
+    clearTimeout(reconnectTimeoutId);
+    reconnectTimeoutId = null;
+  }
+
   try {
     nativePort = chrome.runtime.connectNative(NATIVE_HOST);
+    reconnectAttempts = 0;
 
     nativePort.onMessage.addListener((message) => {
       console.log("Native message:", message);
-      if (message.type === "state") {
+      if (message && message.type === "state" && validateStateMessage(message)) {
         focusState = {
           active: message.focusActive,
           budgetRemaining: message.budgetRemaining,
           blockedDomains: message.blockedDomains || []
         };
         chrome.storage.local.set({ focusState });
-      } else if (message.type === "budget_updated") {
+      } else if (message && message.type === "budget_updated" && validateBudgetMessage(message)) {
         focusState.budgetRemaining = message.remaining;
         chrome.storage.local.set({ focusState });
+      } else if (message && message.type) {
+        console.warn("Unhandled or invalid message type:", message.type);
       }
     });
 
     nativePort.onDisconnect.addListener(() => {
       console.log("Native host disconnected");
       nativePort = null;
-      // Retry connection after delay
-      setTimeout(connectToNative, 5000);
+      scheduleReconnect();
     });
 
     // Request initial state
     nativePort.postMessage({ type: "request_state" });
   } catch (e) {
     console.error("Failed to connect to native host:", e);
-    // Load cached state
-    chrome.storage.local.get(["focusState"], (result) => {
-      if (result.focusState) {
-        focusState = result.focusState;
-      }
-    });
+    loadCachedState();
+    scheduleReconnect();
   }
+}
+
+function scheduleReconnect() {
+  if (reconnectAttempts >= MAX_RECONNECT_ATTEMPTS) {
+    console.warn("Max reconnect attempts reached. Loading cached state.");
+    loadCachedState();
+    return;
+  }
+
+  const delay = INITIAL_RECONNECT_DELAY * Math.pow(2, reconnectAttempts);
+  reconnectAttempts++;
+  console.log(`Scheduling reconnect attempt ${reconnectAttempts} in ${delay}ms`);
+  reconnectTimeoutId = setTimeout(connectToNative, delay);
+}
+
+function loadCachedState() {
+  chrome.storage.local.get(["focusState"], (result) => {
+    if (result.focusState) {
+      focusState = result.focusState;
+    }
+  });
 }
 
 function sendActivity(url, title) {
@@ -76,9 +122,14 @@ function isDomainBlocked(url) {
 
 // Track tab changes
 chrome.tabs.onActivated.addListener(async (activeInfo) => {
-  const tab = await chrome.tabs.get(activeInfo.tabId);
-  if (tab.url) {
-    sendActivity(tab.url, tab.title || "");
+  try {
+    const tab = await chrome.tabs.get(activeInfo.tabId);
+    if (tab && tab.url) {
+      sendActivity(tab.url, tab.title || "");
+    }
+  } catch (e) {
+    // Tab may not exist or be accessible (e.g., chrome:// pages)
+    console.debug("Could not get tab info:", e.message);
   }
 });
 
