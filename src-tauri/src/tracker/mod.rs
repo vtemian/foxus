@@ -27,7 +27,6 @@ pub struct TrackerService {
     running: Arc<AtomicBool>,
     db: Arc<Mutex<Database>>,
     categorizer: Arc<Mutex<Categorizer>>,
-    platform: NativeTracker,
 }
 
 impl TrackerService {
@@ -37,7 +36,6 @@ impl TrackerService {
             running: Arc::new(AtomicBool::new(false)),
             db,
             categorizer,
-            platform: NativeTracker::new(),
         }
     }
 

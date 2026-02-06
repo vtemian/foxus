@@ -30,20 +30,32 @@ pub struct FocusStateResponse {
 
 #[tauri::command]
 pub fn get_today_stats(db: State<Arc<Mutex<Database>>>) -> Result<StatsResponse, String> {
-    let db = db.lock().map_err(|e| e.to_string())?;
+    let db = db.lock().map_err(|e| {
+        log::error!("Failed to acquire database lock: {}", e);
+        "Failed to load statistics".to_string()
+    })?;
     let conn = db.connection();
 
     let now = SystemTime::now()
         .duration_since(UNIX_EPOCH)
-        .map_err(|e| format!("System time error: {}", e))?
+        .map_err(|e| {
+            log::error!("System time error: {}", e);
+            "Failed to load statistics".to_string()
+        })?
         .as_secs() as i64;
 
     // Start of today (midnight)
     let today_start = now - (now % 86400);
 
-    let categories = Category::find_all(conn).map_err(|e| e.to_string())?;
+    let categories = Category::find_all(conn).map_err(|e| {
+        log::error!("Failed to load categories: {}", e);
+        "Failed to load statistics".to_string()
+    })?;
     let totals = Activity::total_duration_by_category(conn, today_start, now)
-        .map_err(|e| e.to_string())?;
+        .map_err(|e| {
+            log::error!("Failed to load activity totals: {}", e);
+            "Failed to load statistics".to_string()
+        })?;
 
     let mut productive_secs = 0;
     let mut neutral_secs = 0;
@@ -69,7 +81,10 @@ pub fn get_today_stats(db: State<Arc<Mutex<Database>>>) -> Result<StatsResponse,
          GROUP BY app_name
          ORDER BY total DESC
          LIMIT 5"
-    ).map_err(|e| e.to_string())?;
+    ).map_err(|e| {
+        log::error!("Failed to prepare top apps query: {}", e);
+        "Failed to load statistics".to_string()
+    })?;
 
     let top_apps: Vec<AppStat> = stmt.query_map(rusqlite::params![today_start, now], |row| {
         Ok(AppStat {
@@ -78,7 +93,10 @@ pub fn get_today_stats(db: State<Arc<Mutex<Database>>>) -> Result<StatsResponse,
             productivity: row.get::<_, Option<i32>>(2)?.unwrap_or(0),
         })
     })
-    .map_err(|e| e.to_string())?
+    .map_err(|e| {
+        log::error!("Failed to query top apps: {}", e);
+        "Failed to load statistics".to_string()
+    })?
     .filter_map(|r| r.ok())
     .collect();
 
@@ -92,7 +110,10 @@ pub fn get_today_stats(db: State<Arc<Mutex<Database>>>) -> Result<StatsResponse,
 
 #[tauri::command]
 pub fn get_focus_state(focus_manager: State<Arc<FocusManager>>) -> Result<FocusStateResponse, String> {
-    let state = focus_manager.get_state().map_err(|e| e.to_string())?;
+    let state = focus_manager.get_state().map_err(|e| {
+        log::error!("Failed to get focus state: {}", e);
+        "Failed to load focus state".to_string()
+    })?;
 
     Ok(FocusStateResponse {
         active: state.active,
@@ -106,14 +127,29 @@ pub fn start_focus_session(
     focus_manager: State<Arc<FocusManager>>,
     budget_minutes: i32,
 ) -> Result<(), String> {
+    // Validate input: budget must be positive and reasonable (max 24 hours)
+    if budget_minutes <= 0 {
+        return Err("Budget must be a positive number of minutes".to_string());
+    }
+    const MAX_BUDGET_MINUTES: i32 = 24 * 60; // 24 hours
+    if budget_minutes > MAX_BUDGET_MINUTES {
+        return Err(format!(
+            "Budget cannot exceed {} minutes (24 hours)",
+            MAX_BUDGET_MINUTES
+        ));
+    }
+
     focus_manager
         .start_session(budget_minutes * 60)
-        .map_err(|e| e.to_string())?;
+        .map_err(|_| "Failed to start focus session".to_string())?;
     Ok(())
 }
 
 #[tauri::command]
 pub fn end_focus_session(focus_manager: State<Arc<FocusManager>>) -> Result<(), String> {
-    focus_manager.end_session().map_err(|e| e.to_string())?;
+    focus_manager.end_session().map_err(|e| {
+        log::error!("Failed to end focus session: {}", e);
+        "Failed to end focus session".to_string()
+    })?;
     Ok(())
 }

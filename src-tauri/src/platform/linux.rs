@@ -8,18 +8,40 @@ pub struct LinuxTracker {
     root: Window,
 }
 
+impl Default for LinuxTracker {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl LinuxTracker {
     pub fn new() -> Self {
         match x11rb::connect(None) {
             Ok((conn, screen_num)) => {
-                let screen = &conn.setup().roots[screen_num];
+                // Validate screen_num is within bounds to avoid potential panic
+                let setup = conn.setup();
+                if screen_num >= setup.roots.len() {
+                    eprintln!(
+                        "Warning: Invalid screen number {} (only {} screens available). Window tracking disabled.",
+                        screen_num,
+                        setup.roots.len()
+                    );
+                    return Self { conn: None, root: 0 };
+                }
+                let screen = &setup.roots[screen_num];
                 let root = screen.root;
-                Self { conn: Some(conn), root }
+                Self {
+                    conn: Some(conn),
+                    root,
+                }
             }
             Err(e) => {
                 // Log the error but don't panic - the tracker will return empty results
                 // This allows the app to run on Wayland or headless systems
-                eprintln!("Warning: Failed to connect to X server: {}. Window tracking disabled.", e);
+                eprintln!(
+                    "Warning: Failed to connect to X server: {}. Window tracking disabled.",
+                    e
+                );
                 Self { conn: None, root: 0 }
             }
         }
@@ -120,5 +142,15 @@ mod tests {
         if let Some(window) = tracker.get_active_window() {
             println!("Active: {} - {}", window.app_name, window.window_title);
         }
+    }
+
+    #[test]
+    #[ignore] // Requires X11 display
+    fn test_get_idle_time() {
+        let tracker = LinuxTracker::new();
+        let idle = tracker.get_idle_time_secs();
+        // Should be a reasonable value (less than a day in seconds)
+        assert!(idle < 86400);
+        println!("Idle time: {} seconds", idle);
     }
 }

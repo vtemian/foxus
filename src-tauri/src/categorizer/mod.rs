@@ -234,4 +234,31 @@ mod tests {
         categorizer.reload(conn).unwrap();
         assert_eq!(categorizer.categorize_app("MyNewApp", None), coding.id);
     }
+
+    #[test]
+    fn test_higher_priority_rule_wins_when_both_match() {
+        let (db, _dir) = setup_db();
+        let conn = db.connection();
+
+        let categories = Category::find_all(conn).unwrap();
+        let coding = categories.iter().find(|c| c.name == "Coding").unwrap();
+        let entertainment = categories.iter().find(|c| c.name == "Entertainment").unwrap();
+
+        // Use app names that don't conflict with default rules
+        // Lower priority rule matches broadly (any app containing "editor")
+        Rule::create(conn, "editor", "app", entertainment.id, 5).unwrap();
+        // Higher priority rule matches more specifically "fancy editor"
+        Rule::create(conn, "fancy editor", "app", coding.id, 20).unwrap();
+
+        let categorizer = Categorizer::new(conn).unwrap();
+
+        // "Fancy Editor Pro" matches both "editor" and "fancy editor"
+        // Should use the higher priority rule (priority 20 -> Coding)
+        let category_id = categorizer.categorize_app("Fancy Editor Pro", None);
+        assert_eq!(category_id, coding.id, "Higher priority rule should win");
+
+        // "Simple Editor" only matches "editor" rule
+        let category_id = categorizer.categorize_app("Simple Editor", None);
+        assert_eq!(category_id, entertainment.id, "Should match the only applicable rule");
+    }
 }

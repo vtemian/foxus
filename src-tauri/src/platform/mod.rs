@@ -34,6 +34,15 @@ impl PlatformTracker for NativeTracker {
 }
 
 #[cfg(not(any(target_os = "macos", target_os = "linux")))]
+impl Default for NativeTracker {
+    fn default() -> Self {
+        Self
+    }
+}
+
+#[cfg(not(any(target_os = "macos", target_os = "linux")))]
 impl NativeTracker {
-    pub fn new() -> Self { Self }
+    pub fn new() -> Self {
+        Self::default()
+    }
 }

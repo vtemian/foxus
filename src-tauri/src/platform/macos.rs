@@ -4,9 +4,15 @@ use objc2_app_kit::NSWorkspace;
 
 pub struct MacOSTracker;
 
+impl Default for MacOSTracker {
+    fn default() -> Self {
+        Self
+    }
+}
+
 impl MacOSTracker {
     pub fn new() -> Self {
-        Self
+        Self::default()
     }
 }
 
@@ -64,9 +70,16 @@ fn get_idle_time_secs_internal() -> u64 {
     idle_secs.max(0.0) as u64
 }
 
+/// Get window title using AppleScript.
+///
+/// PERFORMANCE NOTE: This spawns a subprocess on every call, which takes ~50-100ms.
+/// For high-frequency polling, consider caching results or using accessibility APIs
+/// (requires entitlements and user permission).
+///
+/// The AppleScript approach works without accessibility permissions but is slow.
+/// A better long-term solution would use the Accessibility API (AXUIElement) which
+/// requires adding the accessibility entitlement and requesting user permission.
 fn get_window_title() -> Option<String> {
-    // This requires accessibility permissions
-    // Using AppleScript as a fallback that works without special permissions
     let output = std::process::Command::new("osascript")
         .arg("-e")
         .arg(r#"tell application "System Events" to get name of first window of (first application process whose frontmost is true)"#)

@@ -46,6 +46,8 @@ CREATE TABLE IF NOT EXISTS focus_schedules (
 CREATE INDEX IF NOT EXISTS idx_activities_timestamp ON activities(timestamp);
 CREATE INDEX IF NOT EXISTS idx_activities_category ON activities(category_id);
 CREATE INDEX IF NOT EXISTS idx_focus_sessions_active ON focus_sessions(ended_at) WHERE ended_at IS NULL;
+CREATE INDEX IF NOT EXISTS idx_focus_sessions_started_at ON focus_sessions(started_at);
+CREATE INDEX IF NOT EXISTS idx_rules_category ON rules(category_id);
 "#;
 
 pub const DEFAULT_CATEGORIES: &[(&str, i32)] = &[

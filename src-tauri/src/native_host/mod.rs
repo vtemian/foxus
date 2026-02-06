@@ -112,15 +112,31 @@ impl NativeHost {
     }
 
     fn record_activity(&self, url: &str, title: &str, _timestamp: i64) {
+        // Input validation: limit URL and title length to prevent DoS
+        const MAX_URL_LEN: usize = 2048;
+        const MAX_TITLE_LEN: usize = 512;
+
+        let url = if url.len() > MAX_URL_LEN {
+            &url[..MAX_URL_LEN]
+        } else {
+            url
+        };
+
+        let title = if title.len() > MAX_TITLE_LEN {
+            &title[..MAX_TITLE_LEN]
+        } else {
+            title
+        };
+
         let domain = extract_domain(url);
         let timestamp = SystemTime::now()
             .duration_since(UNIX_EPOCH)
-            .unwrap()
+            .unwrap_or_else(|_| std::time::Duration::from_secs(0))
             .as_secs() as i64;
 
-        let category_id = {
-            let cat = self.categorizer.lock().unwrap();
-            cat.categorize_url(&domain)
+        let category_id = match self.categorizer.lock() {
+            Ok(cat) => cat.categorize_url(&domain),
+            Err(poisoned) => poisoned.into_inner().categorize_url(&domain),
         };
 
         let mut activity = Activity::new(timestamp, 5, "browser", None, Some(title));

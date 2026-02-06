@@ -11,16 +11,18 @@ pub struct FocusSession {
     pub distraction_used: i32,
 }
 
+fn current_timestamp() -> i64 {
+    SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .expect("System clock is before Unix epoch - this should never happen on properly configured systems")
+        .as_secs() as i64
+}
+
 impl FocusSession {
     pub fn new(distraction_budget_secs: i32, scheduled: bool) -> Self {
-        let now = SystemTime::now()
-            .duration_since(UNIX_EPOCH)
-            .unwrap()
-            .as_secs() as i64;
-
         Self {
             id: None,
-            started_at: now,
+            started_at: current_timestamp(),
             ended_at: None,
             scheduled,
             distraction_budget: distraction_budget_secs,
@@ -66,33 +68,37 @@ impl FocusSession {
         }
     }
 
+    /// Ends the focus session by setting the ended_at timestamp.
+    /// Returns an error if the session has not been saved yet (id is None).
     pub fn end(&mut self, conn: &Connection) -> Result<()> {
-        let now = SystemTime::now()
-            .duration_since(UNIX_EPOCH)
-            .unwrap()
-            .as_secs() as i64;
+        let id = self.id.ok_or_else(|| {
+            rusqlite::Error::InvalidParameterName("Cannot end unsaved session - call save() first".to_string())
+        })?;
 
+        let now = current_timestamp();
         self.ended_at = Some(now);
 
-        if let Some(id) = self.id {
-            conn.execute(
-                "UPDATE focus_sessions SET ended_at = ?1 WHERE id = ?2",
-                params![now, id],
-            )?;
-        }
+        conn.execute(
+            "UPDATE focus_sessions SET ended_at = ?1 WHERE id = ?2",
+            params![now, id],
+        )?;
 
         Ok(())
     }
 
+    /// Adds distraction time to the session.
+    /// Returns an error if the session has not been saved yet (id is None).
     pub fn add_distraction_time(&mut self, conn: &Connection, secs: i32) -> Result<()> {
+        let id = self.id.ok_or_else(|| {
+            rusqlite::Error::InvalidParameterName("Cannot update unsaved session - call save() first".to_string())
+        })?;
+
         self.distraction_used += secs;
 
-        if let Some(id) = self.id {
-            conn.execute(
-                "UPDATE focus_sessions SET distraction_used = ?1 WHERE id = ?2",
-                params![self.distraction_used, id],
-            )?;
-        }
+        conn.execute(
+            "UPDATE focus_sessions SET distraction_used = ?1 WHERE id = ?2",
+            params![self.distraction_used, id],
+        )?;
 
         Ok(())
     }
@@ -345,5 +351,29 @@ mod tests {
 
         let found = FocusSession::find_active(conn).unwrap().unwrap();
         assert!(!found.scheduled);
+    }
+
+    #[test]
+    fn test_end_unsaved_session_returns_error() {
+        let (db, _dir) = setup_db();
+        let conn = db.connection();
+
+        let mut session = FocusSession::new(600, false);
+        // Don't save - session.id is None
+
+        let result = session.end(conn);
+        assert!(result.is_err(), "end() should fail on unsaved session");
+    }
+
+    #[test]
+    fn test_add_distraction_time_unsaved_session_returns_error() {
+        let (db, _dir) = setup_db();
+        let conn = db.connection();
+
+        let mut session = FocusSession::new(600, false);
+        // Don't save - session.id is None
+
+        let result = session.add_distraction_time(conn, 50);
+        assert!(result.is_err(), "add_distraction_time() should fail on unsaved session");
     }
 }
