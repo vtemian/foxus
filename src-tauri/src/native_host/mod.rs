@@ -63,9 +63,19 @@ impl NativeHost {
     }
 
     fn read_message(&self) -> io::Result<IncomingMessage> {
+        // Chrome Native Messaging protocol specifies little-endian byte order
         let mut len_bytes = [0u8; 4];
         io::stdin().read_exact(&mut len_bytes)?;
-        let len = u32::from_ne_bytes(len_bytes) as usize;
+        let len = u32::from_le_bytes(len_bytes) as usize;
+
+        // Chrome limits native messaging to 1MB (1024 * 1024 bytes)
+        const MAX_MESSAGE_SIZE: usize = 1024 * 1024;
+        if len > MAX_MESSAGE_SIZE {
+            return Err(io::Error::new(
+                io::ErrorKind::InvalidData,
+                format!("Message too large: {} bytes (max: {} bytes)", len, MAX_MESSAGE_SIZE),
+            ));
+        }
 
         let mut buffer = vec![0u8; len];
         io::stdin().read_exact(&mut buffer)?;
@@ -78,7 +88,8 @@ impl NativeHost {
         let json = serde_json::to_vec(message)?;
         let len = json.len() as u32;
 
-        io::stdout().write_all(&len.to_ne_bytes())?;
+        // Chrome Native Messaging protocol specifies little-endian byte order
+        io::stdout().write_all(&len.to_le_bytes())?;
         io::stdout().write_all(&json)?;
         io::stdout().flush()?;
 

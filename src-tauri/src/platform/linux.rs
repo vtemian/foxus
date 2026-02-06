@@ -4,21 +4,29 @@ use x11rb::protocol::screensaver;
 use x11rb::protocol::xproto::{AtomEnum, ConnectionExt, Window};
 
 pub struct LinuxTracker {
-    conn: x11rb::rust_connection::RustConnection,
+    conn: Option<x11rb::rust_connection::RustConnection>,
     root: Window,
 }
 
 impl LinuxTracker {
     pub fn new() -> Self {
-        let (conn, screen_num) = x11rb::connect(None).expect("Failed to connect to X server");
-        let screen = &conn.setup().roots[screen_num];
-        let root = screen.root;
-
-        Self { conn, root }
+        match x11rb::connect(None) {
+            Ok((conn, screen_num)) => {
+                let screen = &conn.setup().roots[screen_num];
+                let root = screen.root;
+                Self { conn: Some(conn), root }
+            }
+            Err(e) => {
+                // Log the error but don't panic - the tracker will return empty results
+                // This allows the app to run on Wayland or headless systems
+                eprintln!("Warning: Failed to connect to X server: {}. Window tracking disabled.", e);
+                Self { conn: None, root: 0 }
+            }
+        }
     }
 
     fn get_atom(&self, name: &str) -> Option<u32> {
-        self.conn
+        self.conn.as_ref()?
             .intern_atom(false, name.as_bytes())
             .ok()?
             .reply()
@@ -27,8 +35,7 @@ impl LinuxTracker {
     }
 
     fn get_window_property(&self, window: Window, atom: u32) -> Option<String> {
-        let reply = self
-            .conn
+        let reply = self.conn.as_ref()?
             .get_property(false, window, atom, AtomEnum::ANY, 0, 1024)
             .ok()?
             .reply()
@@ -42,9 +49,9 @@ impl LinuxTracker {
     }
 
     fn get_active_window_id(&self) -> Option<Window> {
+        let conn = self.conn.as_ref()?;
         let atom = self.get_atom("_NET_ACTIVE_WINDOW")?;
-        let reply = self
-            .conn
+        let reply = conn
             .get_property(false, self.root, atom, AtomEnum::WINDOW, 0, 1)
             .ok()?
             .reply()
@@ -89,11 +96,15 @@ impl PlatformTracker for LinuxTracker {
     }
 
     fn get_idle_time_secs(&self) -> u64 {
-        let info = screensaver::query_info(&self.conn, self.root)
+        let Some(conn) = self.conn.as_ref() else {
+            return 0;
+        };
+
+        let info = screensaver::query_info(conn, self.root)
             .ok()
             .and_then(|cookie| cookie.reply().ok());
 
-        info.map(|i| (i.ms_since_user_input / 1000) as u64)
+        info.map(|i| u64::from(i.ms_since_user_input / 1000))
             .unwrap_or(0)
     }
 }
