@@ -2,6 +2,7 @@ use crate::categorizer::Categorizer;
 use crate::db::Database;
 use crate::models::Activity;
 use crate::platform::{NativeTracker, PlatformTracker};
+use log::{error, warn};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
 use std::thread;
@@ -46,44 +47,55 @@ impl TrackerService {
         let running = Arc::clone(&self.running);
         let db = Arc::clone(&self.db);
         let categorizer = Arc::clone(&self.categorizer);
-        let config = TrackerConfig {
-            poll_interval_secs: self.config.poll_interval_secs,
-            idle_threshold_secs: self.config.idle_threshold_secs,
-        };
+        let poll_interval_secs = self.config.poll_interval_secs;
+        let idle_threshold_secs = self.config.idle_threshold_secs;
         let platform = NativeTracker::new();
 
         thread::spawn(move || {
             while running.load(Ordering::SeqCst) {
                 let idle_secs = platform.get_idle_time_secs();
 
-                if idle_secs < config.idle_threshold_secs {
+                if idle_secs < idle_threshold_secs {
                     if let Some(window) = platform.get_active_window() {
                         let timestamp = SystemTime::now()
                             .duration_since(UNIX_EPOCH)
                             .unwrap_or_else(|_| Duration::from_secs(0))
                             .as_secs() as i64;
 
-                        let category_id = {
-                            let cat = categorizer.lock().unwrap();
-                            cat.categorize_app(&window.app_name, Some(&window.window_title))
+                        let category_id = match categorizer.lock() {
+                            Ok(cat) => cat.categorize_app(&window.app_name, Some(&window.window_title)),
+                            Err(poisoned) => {
+                                warn!("Categorizer mutex was poisoned, recovering");
+                                poisoned.into_inner().categorize_app(&window.app_name, Some(&window.window_title))
+                            }
                         };
 
                         let mut activity = Activity::new(
                             timestamp,
-                            config.poll_interval_secs as i32,
+                            poll_interval_secs as i32,
                             "app",
                             Some(&window.app_name),
                             Some(&window.window_title),
                         );
                         activity.category_id = Some(category_id);
 
-                        if let Ok(db) = db.lock() {
-                            let _ = activity.save(db.connection());
+                        match db.lock() {
+                            Ok(db_guard) => {
+                                if let Err(e) = activity.save(db_guard.connection()) {
+                                    error!("Failed to save activity: {}", e);
+                                }
+                            }
+                            Err(poisoned) => {
+                                warn!("Database mutex was poisoned, recovering");
+                                if let Err(e) = activity.save(poisoned.into_inner().connection()) {
+                                    error!("Failed to save activity after recovery: {}", e);
+                                }
+                            }
                         }
                     }
                 }
 
-                thread::sleep(Duration::from_secs(config.poll_interval_secs));
+                thread::sleep(Duration::from_secs(poll_interval_secs));
             }
         })
     }

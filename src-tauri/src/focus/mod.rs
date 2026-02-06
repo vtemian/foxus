@@ -1,7 +1,8 @@
 use crate::db::Database;
 use crate::models::FocusSession;
+use log::warn;
 use rusqlite::Connection;
-use std::sync::{Arc, Mutex};
+use std::sync::{Arc, Mutex, MutexGuard};
 
 #[derive(Debug, Clone)]
 pub struct FocusState {
@@ -19,8 +20,18 @@ impl FocusManager {
         Self { db }
     }
 
+    fn lock_db(&self) -> MutexGuard<'_, Database> {
+        match self.db.lock() {
+            Ok(guard) => guard,
+            Err(poisoned) => {
+                warn!("FocusManager: database mutex was poisoned, recovering");
+                poisoned.into_inner()
+            }
+        }
+    }
+
     pub fn start_session(&self, distraction_budget_secs: i32) -> rusqlite::Result<FocusSession> {
-        let db = self.db.lock().unwrap();
+        let db = self.lock_db();
         let conn = db.connection();
 
         // End any existing active session
@@ -35,7 +46,7 @@ impl FocusManager {
     }
 
     pub fn end_session(&self) -> rusqlite::Result<Option<FocusSession>> {
-        let db = self.db.lock().unwrap();
+        let db = self.lock_db();
         let conn = db.connection();
 
         if let Some(mut session) = FocusSession::find_active(conn)? {
@@ -47,7 +58,7 @@ impl FocusManager {
     }
 
     pub fn get_state(&self) -> rusqlite::Result<FocusState> {
-        let db = self.db.lock().unwrap();
+        let db = self.lock_db();
         let conn = db.connection();
 
         let session = FocusSession::find_active(conn)?;
@@ -61,7 +72,7 @@ impl FocusManager {
     }
 
     pub fn use_distraction_time(&self, secs: i32) -> rusqlite::Result<Option<i32>> {
-        let db = self.db.lock().unwrap();
+        let db = self.lock_db();
         let conn = db.connection();
 
         if let Some(mut session) = FocusSession::find_active(conn)? {
