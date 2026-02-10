@@ -12,7 +12,7 @@ struct WindowTitleCache {
 }
 
 impl WindowTitleCache {
-    const TTL: Duration = Duration::from_secs(1);
+    const TTL: Duration = Duration::from_secs(5);
 
     fn new() -> Self {
         Self {

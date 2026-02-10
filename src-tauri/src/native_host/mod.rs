@@ -6,6 +6,7 @@ use serde::{Deserialize, Serialize};
 use std::io::{self, Read, Write};
 use std::sync::{Arc, Mutex};
 use std::time::{SystemTime, UNIX_EPOCH};
+use url::Url;
 
 #[derive(Debug, Deserialize)]
 #[serde(tag = "type")]
@@ -86,6 +87,16 @@ impl NativeHost {
 
     fn write_message(&self, message: &OutgoingMessage) -> io::Result<()> {
         let json = serde_json::to_vec(message)?;
+
+        // Chrome limits native messaging to 1MB (1024 * 1024 bytes)
+        const MAX_MESSAGE_SIZE: usize = 1024 * 1024;
+        if json.len() > MAX_MESSAGE_SIZE {
+            return Err(io::Error::new(
+                io::ErrorKind::InvalidData,
+                format!("Outgoing message too large: {} bytes (max: {} bytes)", json.len(), MAX_MESSAGE_SIZE),
+            ));
+        }
+
         let len = json.len() as u32;
 
         // Chrome Native Messaging protocol specifies little-endian byte order
@@ -178,13 +189,29 @@ impl NativeHost {
     }
 }
 
-fn extract_domain(url: &str) -> String {
-    url.trim_start_matches("https://")
-        .trim_start_matches("http://")
-        .split('/')
-        .next()
-        .unwrap_or("")
-        .to_string()
+/// Extract domain from a URL using proper URL parsing.
+/// This handles edge cases like URLs with userinfo (e.g., https://user@evil.com@legitimate.com).
+fn extract_domain(url_str: &str) -> String {
+    // Use the url crate for proper parsing
+    match Url::parse(url_str) {
+        Ok(url) => url.host_str().unwrap_or("").to_string(),
+        Err(_) => {
+            // For malformed URLs that don't start with a scheme, return empty
+            // This prevents treating random text as a domain
+            if !url_str.starts_with("http://") && !url_str.starts_with("https://") {
+                return String::new();
+            }
+            // Fallback for malformed URLs with scheme: try basic extraction
+            url_str
+                .trim_start_matches("https://")
+                .trim_start_matches("http://")
+                .split('/')
+                .next()
+                .and_then(|s| s.split('@').last()) // Handle userinfo attacks
+                .unwrap_or("")
+                .to_string()
+        }
+    }
 }
 
 #[cfg(test)]
@@ -196,5 +223,24 @@ mod tests {
         assert_eq!(extract_domain("https://www.reddit.com/r/rust"), "www.reddit.com");
         assert_eq!(extract_domain("http://github.com"), "github.com");
         assert_eq!(extract_domain("https://docs.rs/tauri/latest"), "docs.rs");
+    }
+
+    #[test]
+    fn test_extract_domain_with_userinfo() {
+        // This is a potential security attack: URLs with @ can trick naive parsers
+        assert_eq!(extract_domain("https://evil.com@legitimate.com/"), "legitimate.com");
+    }
+
+    #[test]
+    fn test_extract_domain_empty_and_malformed() {
+        assert_eq!(extract_domain(""), "");
+        assert_eq!(extract_domain("not-a-url"), "");
+        assert_eq!(extract_domain("https://"), "");
+    }
+
+    #[test]
+    fn test_extract_domain_with_port() {
+        assert_eq!(extract_domain("https://localhost:3000/api"), "localhost");
+        assert_eq!(extract_domain("http://example.com:8080/path"), "example.com");
     }
 }

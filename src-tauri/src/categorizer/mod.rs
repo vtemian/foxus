@@ -1,5 +1,6 @@
 use crate::models::{Category, MatchType, Rule};
 use rusqlite::Connection;
+use std::collections::HashMap;
 
 pub struct Categorizer {
     rules: Vec<(Rule, Category)>,
@@ -11,11 +12,17 @@ impl Categorizer {
         let rules = Rule::find_all(conn)?;
         let categories = Category::find_all(conn)?;
 
+        // Use HashMap for O(1) category lookup instead of O(n) linear search
+        let category_map: HashMap<i64, Category> = categories
+            .iter()
+            .map(|c| (c.id, c.clone()))
+            .collect();
+
         let rules_with_categories: Vec<_> = rules
             .into_iter()
             .filter_map(|rule| {
-                categories.iter()
-                    .find(|c| c.id == rule.category_id)
+                category_map
+                    .get(&rule.category_id)
                     .map(|c| (rule, c.clone()))
             })
             .collect();
