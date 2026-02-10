@@ -65,8 +65,6 @@ impl Rule {
     }
 
     /// Create a new rule.
-    /// Currently used in tests; kept as part of the public API for future use.
-    #[allow(dead_code)]
     pub fn create(conn: &Connection, pattern: &str, match_type: MatchType, category_id: i64, priority: i32) -> Result<Self> {
         conn.execute(
             "INSERT INTO rules (pattern, match_type, category_id, priority) VALUES (?1, ?2, ?3, ?4)",
@@ -74,6 +72,48 @@ impl Rule {
         )?;
         let id = conn.last_insert_rowid();
         Ok(Self { id, pattern: pattern.to_string(), match_type, category_id, priority })
+    }
+
+    /// Find a rule by ID.
+    pub fn find_by_id(conn: &Connection, id: i64) -> Result<Option<Self>> {
+        let mut stmt = conn.prepare(
+            "SELECT id, pattern, match_type, category_id, priority FROM rules WHERE id = ?1"
+        )?;
+
+        let mut rows = stmt.query(params![id])?;
+
+        if let Some(row) = rows.next()? {
+            let match_type_str: String = row.get(2)?;
+            let match_type = MatchType::from_str(&match_type_str)
+                .unwrap_or(MatchType::App);
+            Ok(Some(Self {
+                id: row.get(0)?,
+                pattern: row.get(1)?,
+                match_type,
+                category_id: row.get(3)?,
+                priority: row.get(4)?,
+            }))
+        } else {
+            Ok(None)
+        }
+    }
+
+    /// Update an existing rule.
+    pub fn update(conn: &Connection, id: i64, pattern: &str, match_type: MatchType, category_id: i64, priority: i32) -> Result<bool> {
+        let rows_affected = conn.execute(
+            "UPDATE rules SET pattern = ?1, match_type = ?2, category_id = ?3, priority = ?4 WHERE id = ?5",
+            params![pattern, match_type.as_str(), category_id, priority, id],
+        )?;
+        Ok(rows_affected > 0)
+    }
+
+    /// Delete a rule.
+    pub fn delete(conn: &Connection, id: i64) -> Result<bool> {
+        let rows_affected = conn.execute(
+            "DELETE FROM rules WHERE id = ?1",
+            params![id],
+        )?;
+        Ok(rows_affected > 0)
     }
 }
 

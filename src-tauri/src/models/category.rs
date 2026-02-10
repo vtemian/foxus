@@ -40,8 +40,6 @@ impl Category {
     }
 
     /// Create a new category.
-    /// Currently used in tests; kept as part of the public API for future use.
-    #[allow(dead_code)]
     pub fn create(conn: &Connection, name: &str, productivity: i32) -> Result<Self> {
         conn.execute(
             "INSERT INTO categories (name, productivity) VALUES (?1, ?2)",
@@ -49,6 +47,26 @@ impl Category {
         )?;
         let id = conn.last_insert_rowid();
         Ok(Self { id, name: name.to_string(), productivity })
+    }
+
+    /// Update an existing category.
+    pub fn update(conn: &Connection, id: i64, name: &str, productivity: i32) -> Result<bool> {
+        let rows_affected = conn.execute(
+            "UPDATE categories SET name = ?1, productivity = ?2 WHERE id = ?3",
+            params![name, productivity, id],
+        )?;
+        Ok(rows_affected > 0)
+    }
+
+    /// Delete a category.
+    /// Returns true if a category was deleted, false if not found.
+    /// Note: This will fail if there are rules or activities referencing this category.
+    pub fn delete(conn: &Connection, id: i64) -> Result<bool> {
+        let rows_affected = conn.execute(
+            "DELETE FROM categories WHERE id = ?1",
+            params![id],
+        )?;
+        Ok(rows_affected > 0)
     }
 }
 
