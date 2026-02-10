@@ -1,40 +1,38 @@
-function formatTime(secs) {
-  // Ensure input is a valid number to prevent injection
-  const safeSecs = Math.max(0, Math.floor(Number(secs) || 0));
-  const mins = Math.floor(safeSecs / 60);
-  const s = safeSecs % 60;
-  return `${mins}:${s.toString().padStart(2, "0")}`;
-}
+import { formatTime } from '../utils.js';
 
-function createStatusContent(isActive, budgetRemaining) {
-  const container = document.createDocumentFragment();
+function updateStatus(isActive, budgetRemaining) {
+  const statusEl = document.getElementById("status");
+  const statusValueEl = document.getElementById("status-value");
+  const budgetEl = document.getElementById("budget");
+  const budgetTimeEl = document.getElementById("budget-time");
 
-  if (isActive) {
-    const statusDiv = document.createElement("div");
-    statusDiv.textContent = "Focus Mode Active";
-    container.appendChild(statusDiv);
-
-    const budgetDiv = document.createElement("div");
-    budgetDiv.className = "budget";
-    budgetDiv.textContent = `${formatTime(budgetRemaining)} remaining`;
-    container.appendChild(budgetDiv);
-  } else {
-    const statusDiv = document.createElement("div");
-    statusDiv.textContent = "Focus Mode Off";
-    container.appendChild(statusDiv);
+  if (!statusEl || !statusValueEl) {
+    console.error("Required elements not found in popup.html");
+    return;
   }
 
-  return container;
+  statusValueEl.classList.remove("loading");
+
+  if (isActive) {
+    statusEl.className = "status active";
+    statusValueEl.textContent = "Active";
+    if (budgetEl && budgetTimeEl) {
+      budgetEl.style.display = "block";
+      budgetTimeEl.textContent = formatTime(budgetRemaining);
+    }
+  } else {
+    statusEl.className = "status inactive";
+    statusValueEl.textContent = "Inactive";
+    if (budgetEl) {
+      budgetEl.style.display = "none";
+    }
+  }
 }
 
 chrome.runtime.sendMessage({ type: "get_state" }, (state) => {
-  const statusEl = document.getElementById("status");
-
   if (state && state.active) {
-    statusEl.className = "status active";
-    statusEl.replaceChildren(createStatusContent(true, state.budgetRemaining));
+    updateStatus(true, state.budgetRemaining);
   } else {
-    statusEl.className = "status inactive";
-    statusEl.replaceChildren(createStatusContent(false, 0));
+    updateStatus(false, 0);
   }
 });

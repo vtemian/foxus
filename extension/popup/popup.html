@@ -1,60 +1,28 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
   <meta charset="UTF-8">
-  <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-      width: 280px;
-      padding: 16px;
-    }
-    .header {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      margin-bottom: 16px;
-    }
-    .header h1 { font-size: 18px; }
-    .status {
-      padding: 12px;
-      border-radius: 8px;
-      margin-bottom: 12px;
-    }
-    .status.active {
-      background: #e8f5e9;
-      color: #2e7d32;
-    }
-    .status.inactive {
-      background: #f5f5f5;
-      color: #666;
-    }
-    .budget {
-      font-size: 24px;
-      font-weight: bold;
-      margin-top: 8px;
-    }
-    .footer {
-      font-size: 12px;
-      color: #999;
-      text-align: center;
-    }
-  </style>
+  <link rel="stylesheet" href="popup.css">
 </head>
 <body>
   <div class="header">
-    <span>&#127919;</span>
+    <span class="icon">&#127919;</span>
     <h1>Foxus</h1>
   </div>
 
-  <div class="status" id="status">
-    Loading...
+  <div class="status inactive" id="status">
+    <div class="status-label">Focus Mode</div>
+    <div class="status-value loading" id="status-value">Loading...</div>
+    <div class="budget" id="budget" style="display: none;">
+      <div class="budget-label">Budget Remaining</div>
+      <div class="budget-time" id="budget-time">0:00</div>
+    </div>
   </div>
 
   <div class="footer">
     Manage in desktop app
   </div>
 
-  <script src="popup.js"></script>
+  <script type="module" src="popup.js"></script>
 </body>
 </html>
