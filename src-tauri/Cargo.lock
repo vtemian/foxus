@@ -852,6 +852,7 @@ dependencies = [
  "tauri",
  "tauri-build",
  "tempfile",
+ "url",
  "x11rb",
 ]
 
