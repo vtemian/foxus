@@ -79,7 +79,8 @@ function scheduleReconnect() {
     return;
   }
 
-  const delay = INITIAL_RECONNECT_DELAY * Math.pow(2, reconnectAttempts);
+  const jitter = Math.floor(Math.random() * 1000);
+  const delay = INITIAL_RECONNECT_DELAY * Math.pow(2, reconnectAttempts) + jitter;
   reconnectAttempts++;
   console.log(`Scheduling reconnect attempt ${reconnectAttempts} in ${delay}ms`);
   reconnectTimeoutId = setTimeout(connectToNative, delay);
