@@ -1,0 +1,97 @@
+@import "tailwindcss";
+
+@theme {
+  /* ----------------------------------------
+   * Color Palette: Productivity States
+   * ---------------------------------------- */
+  --color-productive-50: #22c55e;
+  --color-productive-100: #4ade80;
+  --color-productive-bg: rgba(34, 197, 94, 0.1);
+  --color-productive-bg-dark: rgba(34, 197, 94, 0.15);
+
+  --color-neutral-50: #f59e0b;
+  --color-neutral-100: #fbbf24;
+  --color-neutral-bg: rgba(245, 158, 11, 0.1);
+  --color-neutral-bg-dark: rgba(245, 158, 11, 0.15);
+
+  --color-distracting-50: #ef4444;
+  --color-distracting-100: #f87171;
+  --color-distracting-bg: rgba(239, 68, 68, 0.1);
+  --color-distracting-bg-dark: rgba(239, 68, 68, 0.15);
+
+  /* ----------------------------------------
+   * Color Palette: Gray Scale (Dark Theme)
+   * 100 = darkest (near black), 600 = lightest
+   * ---------------------------------------- */
+  --color-gray-100: #0a0a0a;
+  --color-gray-150: #141414;
+  --color-gray-200: #1a1a1a;
+  --color-gray-250: #2a2a2a;
+  --color-gray-300: #404040;
+  --color-gray-350: #666666;
+  --color-gray-400: #999999;
+  --color-gray-450: #a0a0a0;
+  --color-gray-500: #cccccc;
+  --color-gray-550: #e0e0e0;
+  --color-gray-600: #f0f0f0;
+
+  /* ----------------------------------------
+   * Color Palette: Accent (Blue)
+   * ---------------------------------------- */
+  --color-accent-50: #3b82f6;
+  --color-accent-100: #2563eb;
+
+  /* ----------------------------------------
+   * Typography
+   * ---------------------------------------- */
+  --font-family-mono: 'IBM Plex Mono', 'SF Mono', 'Monaco', 'Inconsolata', 'Fira Mono', monospace;
+
+  /* ----------------------------------------
+   * Container
+   * ---------------------------------------- */
+  --spacing-container: 400px;
+}
+
+/* ----------------------------------------
+ * Custom Utilities
+ * ---------------------------------------- */
+@utility noise-overlay {
+  position: relative;
+  &::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    opacity: 0.02;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+    z-index: 9999;
+  }
+}
+
+@utility font-tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+@utility scrollbar-hidden {
+  scrollbar-width: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+/* ----------------------------------------
+ * Base Styles
+ * ---------------------------------------- */
+html {
+  font-family: var(--font-family-mono);
+}
+
+body {
+  background-color: var(--color-gray-100);
+  color: var(--color-gray-600);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
