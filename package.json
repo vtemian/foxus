@@ -3,6 +3,9 @@
   "private": true,
   "version": "0.1.0",
   "type": "module",
+  "tauri": {
+    "appPath": "src/tauri"
+  },
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
