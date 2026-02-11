@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Foxus</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>🎯 Foxus</h1>
+      <label for="period" class="visually-hidden">Time period</label>
+      <select id="period" aria-label="Select time period">
+        <option value="today">Today</option>
+        <option value="week">This Week</option>
+      </select>
+    </header>
+
+    <section id="stats-view">
+      <div class="stats-bars">
+        <div class="stat-row">
+          <span class="label">Productive</span>
+          <div class="bar-container">
+            <div class="bar productive" id="bar-productive"></div>
+          </div>
+          <span class="time" id="time-productive">0h 0m</span>
+        </div>
+        <div class="stat-row">
+          <span class="label">Neutral</span>
+          <div class="bar-container">
+            <div class="bar neutral" id="bar-neutral"></div>
+          </div>
+          <span class="time" id="time-neutral">0h 0m</span>
+        </div>
+        <div class="stat-row">
+          <span class="label">Distracting</span>
+          <div class="bar-container">
+            <div class="bar distracting" id="bar-distracting"></div>
+          </div>
+          <span class="time" id="time-distracting">0h 0m</span>
+        </div>
+      </div>
+
+      <div class="top-apps">
+        <h3>Top Apps</h3>
+        <ul id="app-list"></ul>
+      </div>
+    </section>
+
+    <section id="focus-view" style="display: none;">
+      <div class="focus-active">
+        <h2>Focus Mode Active</h2>
+        <div class="budget">
+          <span class="budget-label">Budget remaining</span>
+          <span class="budget-time" id="budget-time">0:00</span>
+        </div>
+      </div>
+    </section>
+
+    <footer>
+      <button id="focus-btn" class="btn-focus" aria-pressed="false">Start Focus Session</button>
+    </footer>
+  </div>
+  <script src="app.js"></script>
+</body>
+</html>
