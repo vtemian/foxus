@@ -24,7 +24,6 @@ export const useTauri = (): UseTauriReturn => {
     try {
       const data = await invoke<TauriStats>("get_today_stats");
       setStats(data);
-      setError(null);
     } catch (e) {
       console.error("Failed to load stats:", e);
       setError(e instanceof Error ? e : new Error(String(e)));
@@ -35,7 +34,6 @@ export const useTauri = (): UseTauriReturn => {
     try {
       const state = await invoke<FocusState>("get_focus_state");
       setFocusState(state);
-      setError(null);
     } catch (e) {
       console.error("Failed to load focus state:", e);
       setError(e instanceof Error ? e : new Error(String(e)));
@@ -45,6 +43,7 @@ export const useTauri = (): UseTauriReturn => {
   const refresh = useCallback(async () => {
     if (refreshInProgress.current) return;
     refreshInProgress.current = true;
+    setError(null); // Clear error at start of refresh cycle
     try {
       await Promise.all([loadStats(), loadFocusState()]);
     } finally {

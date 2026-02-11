@@ -38,16 +38,20 @@ const buttonVariants = cva(
   }
 );
 
-export type ButtonProps = React.ComponentProps<"button"> &
+export type ButtonProps<T extends React.ElementType = "button"> = {
+  as?: T;
+} & Omit<React.ComponentPropsWithoutRef<T>, "as" | "className"> &
   VariantProps<typeof buttonVariants>;
 
-export const Button = ({
+export const Button = <T extends React.ElementType = "button">({
+  as,
   className,
   variant = "default",
   ...props
-}: ButtonProps) => {
+}: ButtonProps<T>) => {
+  const Component = as || "button";
   return (
-    <button
+    <Component
       data-slot="button"
       data-variant={variant}
       className={cn(buttonVariants({ variant, className }))}

@@ -12,6 +12,21 @@ const cardVariantClassNames: Record<CardVariant, string> = {
   active: "border-productive-50",
 };
 
+const cardHeaderVariantClasses: Record<CardVariant, string> = {
+  default: "border-gray-250",
+  active: "border-productive-50",
+};
+
+const cardBodyVariantClasses: Record<CardVariant, string> = {
+  default: "",
+  active: "",
+};
+
+const cardTitleVariantClasses: Record<CardVariant, string> = {
+  default: "text-gray-450",
+  active: "text-productive-50",
+};
+
 // Card
 export type CardProps = React.ComponentProps<"div"> & {
   variant?: CardVariant;
@@ -45,10 +60,11 @@ export const Card = ({
 export type CardHeaderProps = React.ComponentProps<"div">;
 
 export const CardHeader = ({ className, ...props }: CardHeaderProps) => {
+  const variant = useContext(CardContext);
   return (
     <div
       data-slot="card-header"
-      className={cn("mb-3 pb-2 border-b border-gray-250", className)}
+      className={cn("mb-3 pb-2 border-b", cardHeaderVariantClasses[variant], className)}
       {...props}
     />
   );
@@ -58,18 +74,27 @@ export const CardHeader = ({ className, ...props }: CardHeaderProps) => {
 export type CardBodyProps = React.ComponentProps<"div">;
 
 export const CardBody = ({ className, ...props }: CardBodyProps) => {
-  return <div data-slot="card-body" className={cn(className)} {...props} />;
+  const variant = useContext(CardContext);
+  return (
+    <div
+      data-slot="card-body"
+      className={cn(cardBodyVariantClasses[variant], className)}
+      {...props}
+    />
+  );
 };
 
 // CardTitle
 export type CardTitleProps = React.ComponentProps<"h3">;
 
 export const CardTitle = ({ className, ...props }: CardTitleProps) => {
+  const variant = useContext(CardContext);
   return (
     <h3
       data-slot="card-title"
       className={cn(
-        "font-mono text-xs font-semibold uppercase tracking-widest text-gray-450",
+        "font-mono text-xs font-semibold uppercase tracking-widest",
+        cardTitleVariantClasses[variant],
         className
       )}
       {...props}
@@ -77,5 +102,3 @@ export const CardTitle = ({ className, ...props }: CardTitleProps) => {
   );
 };
 
-// Hook to access card context
-export const useCardContext = () => useContext(CardContext);

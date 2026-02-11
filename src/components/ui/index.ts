@@ -6,7 +6,6 @@ export {
   CardHeader,
   CardBody,
   CardTitle,
-  useCardContext,
   type CardProps,
   type CardHeaderProps,
   type CardBodyProps,

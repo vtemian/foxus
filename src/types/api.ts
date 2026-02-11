@@ -29,6 +29,7 @@ export type TauriStats = {
 export type FocusState = {
   active: boolean;
   budget_remaining: number;
+  session_duration_secs: number | null;
 };
 
 /**
