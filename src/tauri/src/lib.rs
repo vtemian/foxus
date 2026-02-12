@@ -1,5 +1,6 @@
 pub mod categorizer;
 mod commands;
+pub mod constants;
 pub mod db;
 pub mod focus;
 mod models;
