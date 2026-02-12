@@ -22,7 +22,7 @@ use std::sync::{Arc, Mutex};
 use std::thread::JoinHandle;
 use tauri::{
     menu::{Menu, MenuItem, PredefinedMenuItem},
-    tray::{TrayIcon, TrayIconBuilder},
+    tray::{TrayIcon, TrayIconBuilder, TrayIconEvent},
     webview::WebviewWindowBuilder,
     AppHandle, Manager, RunEvent, Wry,
 };
@@ -171,8 +171,31 @@ pub fn run() {
                 .icon(app.default_window_icon().unwrap().clone())
                 .icon_as_template(true)
                 .menu(&menu)
-                .show_menu_on_left_click(true)
+                .show_menu_on_left_click(false)
                 .tooltip("Foxus")
+                .on_tray_icon_event(|tray, event| {
+                    // Double-click opens the window directly
+                    if let TrayIconEvent::DoubleClick { .. } = event {
+                        let app = tray.app_handle();
+                        if let Some(window) = app.get_webview_window("main") {
+                            let _ = window.show();
+                            let _ = window.set_focus();
+                        } else {
+                            match WebviewWindowBuilder::new(app, "main", tauri::WebviewUrl::default())
+                                .title("Foxus")
+                                .inner_size(420.0, 600.0)
+                                .resizable(true)
+                                .visible(true)
+                                .focused(true)
+                                .center()
+                                .build()
+                            {
+                                Ok(_) => {}
+                                Err(e) => error!("Failed to create window: {}", e),
+                            }
+                        }
+                    }
+                })
                 .on_menu_event(|app, event| {
                     let event_id = event.id.as_ref();
 
