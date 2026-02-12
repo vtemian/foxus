@@ -1,20 +1,23 @@
 import { invoke } from "@tauri-apps/api/core";
 import { useState, useEffect, useCallback, useRef } from "react";
-import type { TauriStats, FocusState } from "@/types/api";
+import type { TauriStats, FocusState, WeeklyStats } from "@/types/api";
 
 const REFRESH_INTERVAL = 5000; // 5 seconds
 
 export type UseTauriReturn = {
   stats: TauriStats | null;
+  weeklyStats: WeeklyStats | null;
   focusState: FocusState | null;
   isLoading: boolean;
   error: Error | null;
   toggleFocus: () => Promise<void>;
+  loadWeeklyStats: () => Promise<void>;
   refresh: () => Promise<void>;
 };
 
 export const useTauri = (): UseTauriReturn => {
   const [stats, setStats] = useState<TauriStats | null>(null);
+  const [weeklyStats, setWeeklyStats] = useState<WeeklyStats | null>(null);
   const [focusState, setFocusState] = useState<FocusState | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
@@ -26,6 +29,16 @@ export const useTauri = (): UseTauriReturn => {
       setStats(data);
     } catch (e) {
       console.error("Failed to load stats:", e);
+      setError(e instanceof Error ? e : new Error(String(e)));
+    }
+  }, []);
+
+  const loadWeeklyStats = useCallback(async () => {
+    try {
+      const data = await invoke<WeeklyStats>("get_weekly_stats");
+      setWeeklyStats(data);
+    } catch (e) {
+      console.error("Failed to load weekly stats:", e);
       setError(e instanceof Error ? e : new Error(String(e)));
     }
   }, []);
@@ -82,5 +95,5 @@ export const useTauri = (): UseTauriReturn => {
     return () => clearInterval(interval);
   }, [refresh]);
 
-  return { stats, focusState, isLoading, error, toggleFocus, refresh };
+  return { stats, weeklyStats, focusState, isLoading, error, toggleFocus, loadWeeklyStats, refresh };
 };

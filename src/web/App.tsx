@@ -1,17 +1,25 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import "@/static/css/globals.css";
 
 import { useTauri } from "@/hooks/use-tauri";
 import { Button, Typography } from "@/components/ui";
 import { Header } from "@/components/header";
 import { StatsView } from "@/components/stats-view";
+import { WeeklyStatsView } from "@/components/weekly-stats-view";
 import { FocusView } from "@/components/focus-view";
 
 export default function App() {
-  const { stats, focusState, isLoading, error, toggleFocus } = useTauri();
+  const { stats, weeklyStats, focusState, isLoading, error, toggleFocus, loadWeeklyStats } = useTauri();
   const [period, setPeriod] = useState<"today" | "week">("today");
 
   const isFocusActive = focusState?.active ?? false;
+
+  // Load weekly stats when user switches to week view
+  useEffect(() => {
+    if (period === "week") {
+      loadWeeklyStats();
+    }
+  }, [period, loadWeeklyStats]);
 
   if (isLoading) {
     return (
@@ -42,7 +50,8 @@ export default function App() {
       <div className="max-w-[400px] mx-auto p-4">
         <Header period={period} onPeriodChange={setPeriod} />
 
-        {!isFocusActive && <StatsView stats={stats} />}
+        {!isFocusActive && period === "today" && <StatsView stats={stats} />}
+        {!isFocusActive && period === "week" && <WeeklyStatsView stats={weeklyStats} />}
         {isFocusActive && (
           <FocusView budgetRemaining={focusState?.budget_remaining ?? 0} />
         )}

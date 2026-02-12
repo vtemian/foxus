@@ -5,6 +5,31 @@
 export type ProductivityLevel = -1 | 0 | 1;
 
 /**
+ * A category for grouping activities.
+ */
+export type Category = {
+  id: number;
+  name: string;
+  productivity: ProductivityLevel;
+};
+
+/**
+ * Match type for rules.
+ */
+export type MatchType = "app" | "domain" | "title";
+
+/**
+ * A rule for categorizing activities based on patterns.
+ */
+export type Rule = {
+  id: number;
+  pattern: string;
+  match_type: MatchType;
+  category_id: number;
+  priority: number;
+};
+
+/**
  * A single app activity with duration and productivity score.
  */
 export type AppActivity = {
@@ -30,6 +55,27 @@ export type FocusState = {
   active: boolean;
   budget_remaining: number;
   session_duration_secs: number | null;
+};
+
+/**
+ * Daily stats for a single day within weekly stats.
+ */
+export type DailyStats = {
+  date: number; // Unix timestamp (start of day)
+  productive_secs: number;
+  neutral_secs: number;
+  distracting_secs: number;
+};
+
+/**
+ * Response from get_weekly_stats Tauri command.
+ */
+export type WeeklyStats = {
+  daily_stats: DailyStats[];
+  total_productive_secs: number;
+  total_neutral_secs: number;
+  total_distracting_secs: number;
+  top_apps: AppActivity[];
 };
 
 /**
