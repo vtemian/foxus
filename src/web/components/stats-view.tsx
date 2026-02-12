@@ -1,6 +1,7 @@
 import { Card, CardHeader, CardBody, CardTitle, Typography } from "@/components/ui";
 import { StatRow } from "./stat-row";
 import { AppListItem } from "./app-list-item";
+import { ProductivityPieChart } from "./productivity-pie-chart";
 import type { TauriStats } from "@/types/api";
 
 export type StatsViewProps = {
@@ -15,6 +16,17 @@ export const StatsView = ({ stats }: StatsViewProps) => {
 
   return (
     <>
+      {/* Productivity Distribution Pie Chart */}
+      <Card className="mb-4">
+        <CardBody>
+          <ProductivityPieChart
+            productiveSecs={stats?.productive_secs ?? 0}
+            neutralSecs={stats?.neutral_secs ?? 0}
+            distractingSecs={stats?.distracting_secs ?? 0}
+          />
+        </CardBody>
+      </Card>
+
       {/* Stats Bars */}
       <Card className="mb-4">
         <CardBody className="space-y-3">
