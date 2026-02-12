@@ -1,7 +1,6 @@
-// src/tauri/src/commands/stats.rs
-
 use crate::constants::SECS_PER_DAY;
 use crate::db::Database;
+use crate::error::AppError;
 use crate::models::{Activity, Category};
 use std::sync::{Arc, Mutex};
 use std::time::{SystemTime, UNIX_EPOCH};
@@ -11,23 +10,15 @@ use super::{AppStat, DailyStats, StatsResponse, WeeklyStatsResponse};
 
 #[tauri::command]
 pub fn get_today_stats(db: State<Arc<Mutex<Database>>>) -> Result<StatsResponse, String> {
-    let db = db.lock().map_err(|e| {
-        log::error!("Failed to acquire database lock: {}", e);
-        "Failed to load statistics".to_string()
-    })?;
+    let db = db.lock().map_err(|_| AppError::LockPoisoned.to_string())?;
     let conn = db.connection();
 
     let now = get_current_timestamp()?;
     let today_start = now - (now % SECS_PER_DAY);
 
-    let categories = Category::find_all(conn).map_err(|e| {
-        log::error!("Failed to load categories: {}", e);
-        "Failed to load statistics".to_string()
-    })?;
-
+    let categories = Category::find_all(conn).map_err(|e| AppError::from(e).to_string())?;
     let (productive_secs, neutral_secs, distracting_secs) =
         calculate_productivity_totals(conn, &categories, today_start, now)?;
-
     let top_apps = query_top_apps(conn, today_start, now, 5)?;
 
     Ok(StatsResponse {
@@ -40,20 +31,14 @@ pub fn get_today_stats(db: State<Arc<Mutex<Database>>>) -> Result<StatsResponse,
 
 #[tauri::command]
 pub fn get_weekly_stats(db: State<Arc<Mutex<Database>>>) -> Result<WeeklyStatsResponse, String> {
-    let db = db.lock().map_err(|e| {
-        log::error!("Failed to acquire database lock: {}", e);
-        "Failed to load statistics".to_string()
-    })?;
+    let db = db.lock().map_err(|_| AppError::LockPoisoned.to_string())?;
     let conn = db.connection();
 
     let now = get_current_timestamp()?;
     let today_start = now - (now % SECS_PER_DAY);
     let week_start = today_start - (6 * SECS_PER_DAY);
 
-    let categories = Category::find_all(conn).map_err(|e| {
-        log::error!("Failed to load categories: {}", e);
-        "Failed to load statistics".to_string()
-    })?;
+    let categories = Category::find_all(conn).map_err(|e| AppError::from(e).to_string())?;
 
     let mut daily_stats = Vec::with_capacity(7);
     let mut total_productive_secs = 0;
@@ -90,15 +75,10 @@ pub fn get_weekly_stats(db: State<Arc<Mutex<Database>>>) -> Result<WeeklyStatsRe
     })
 }
 
-// Helper functions
-
 fn get_current_timestamp() -> Result<i64, String> {
     SystemTime::now()
         .duration_since(UNIX_EPOCH)
-        .map_err(|e| {
-            log::error!("System time error: {}", e);
-            "Failed to load statistics".to_string()
-        })
+        .map_err(|_| AppError::Internal("system time error".into()).to_string())
         .map(|d| d.as_secs() as i64)
 }
 
@@ -108,10 +88,8 @@ fn calculate_productivity_totals(
     start: i64,
     end: i64,
 ) -> Result<(i32, i32, i32), String> {
-    let totals = Activity::total_duration_by_category(conn, start, end).map_err(|e| {
-        log::error!("Failed to load activity totals: {}", e);
-        "Failed to load statistics".to_string()
-    })?;
+    let totals = Activity::total_duration_by_category(conn, start, end)
+        .map_err(|e| AppError::from(e).to_string())?;
 
     let mut productive_secs = 0;
     let mut neutral_secs = 0;
@@ -147,10 +125,7 @@ fn query_top_apps(
              ORDER BY total DESC
              LIMIT ?3",
         )
-        .map_err(|e| {
-            log::error!("Failed to prepare top apps query: {}", e);
-            "Failed to load statistics".to_string()
-        })?;
+        .map_err(|e| AppError::from(e).to_string())?;
 
     let top_apps: Vec<AppStat> = stmt
         .query_map(rusqlite::params![start, end, limit as i32], |row| {
@@ -160,10 +135,7 @@ fn query_top_apps(
                 productivity: row.get::<_, Option<i32>>(2)?.unwrap_or(0),
             })
         })
-        .map_err(|e| {
-            log::error!("Failed to query top apps: {}", e);
-            "Failed to load statistics".to_string()
-        })?
+        .map_err(|e| AppError::from(e).to_string())?
         .filter_map(|r| r.ok())
         .collect();
 

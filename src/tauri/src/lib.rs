@@ -2,6 +2,7 @@ pub mod categorizer;
 mod commands;
 pub mod constants;
 pub mod db;
+pub mod error;
 pub mod validation;
 pub mod focus;
 mod models;
