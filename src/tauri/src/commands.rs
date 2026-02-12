@@ -1,3 +1,4 @@
+use crate::categorizer::Categorizer;
 use crate::db::Database;
 use crate::focus::FocusManager;
 use crate::models::{Activity, Category, FocusSchedule, MatchType, Rule};
@@ -632,6 +633,7 @@ pub fn get_rules(db: State<Arc<Mutex<Database>>>) -> Result<Vec<RuleResponse>, S
 #[tauri::command]
 pub fn create_rule(
     db: State<Arc<Mutex<Database>>>,
+    categorizer: State<Arc<Mutex<Categorizer>>>,
     pattern: String,
     match_type: String,
     category_id: i64,
@@ -674,12 +676,23 @@ pub fn create_rule(
         "Failed to create rule".to_string()
     })?;
 
+    // Reload categorizer cache after creating rule
+    let mut cat = categorizer.lock().map_err(|e| {
+        log::error!("Failed to acquire categorizer lock: {}", e);
+        "Failed to update categorizer".to_string()
+    })?;
+    cat.reload(conn).map_err(|e| {
+        log::error!("Failed to reload categorizer: {}", e);
+        "Failed to update categorizer".to_string()
+    })?;
+
     Ok(RuleResponse::from(rule))
 }
 
 #[tauri::command]
 pub fn update_rule(
     db: State<Arc<Mutex<Database>>>,
+    categorizer: State<Arc<Mutex<Categorizer>>>,
     id: i64,
     pattern: String,
     match_type: String,
@@ -718,15 +731,28 @@ pub fn update_rule(
         return Err("Category not found".to_string());
     }
 
-    Rule::update(conn, id, pattern, match_type, category_id, priority).map_err(|e| {
+    let result = Rule::update(conn, id, pattern, match_type, category_id, priority).map_err(|e| {
         log::error!("Failed to update rule: {}", e);
         "Failed to update rule".to_string()
-    })
+    })?;
+
+    // Reload categorizer cache after updating rule
+    let mut cat = categorizer.lock().map_err(|e| {
+        log::error!("Failed to acquire categorizer lock: {}", e);
+        "Failed to update categorizer".to_string()
+    })?;
+    cat.reload(conn).map_err(|e| {
+        log::error!("Failed to reload categorizer: {}", e);
+        "Failed to update categorizer".to_string()
+    })?;
+
+    Ok(result)
 }
 
 #[tauri::command]
 pub fn delete_rule(
     db: State<Arc<Mutex<Database>>>,
+    categorizer: State<Arc<Mutex<Categorizer>>>,
     id: i64,
 ) -> Result<bool, String> {
     let db = db.lock().map_err(|e| {
@@ -735,10 +761,22 @@ pub fn delete_rule(
     })?;
     let conn = db.connection();
 
-    Rule::delete(conn, id).map_err(|e| {
+    let result = Rule::delete(conn, id).map_err(|e| {
         log::error!("Failed to delete rule: {}", e);
         "Failed to delete rule".to_string()
-    })
+    })?;
+
+    // Reload categorizer cache after deleting rule
+    let mut cat = categorizer.lock().map_err(|e| {
+        log::error!("Failed to acquire categorizer lock: {}", e);
+        "Failed to update categorizer".to_string()
+    })?;
+    cat.reload(conn).map_err(|e| {
+        log::error!("Failed to reload categorizer: {}", e);
+        "Failed to update categorizer".to_string()
+    })?;
+
+    Ok(result)
 }
 
 // Helper functions for testing without Tauri State wrapper
