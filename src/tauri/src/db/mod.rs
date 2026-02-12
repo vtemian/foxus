@@ -1,5 +1,7 @@
 pub mod schema;
 pub mod migrations;
+pub mod helpers;
+pub use helpers::{with_connection, with_connection_mapped};
 
 use rusqlite::{Connection, Result};
 use std::path::PathBuf;
