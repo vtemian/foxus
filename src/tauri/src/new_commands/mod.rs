@@ -4,13 +4,14 @@
 // Submodules will be added in Tasks 6-9.
 
 mod dtos;
+pub mod categories;
 pub mod focus;
 pub mod stats;
 
+pub use categories::*;
 pub use dtos::*;
 pub use focus::*;
 pub use stats::*;
 
-// Future submodules (Tasks 8-9):
-// pub mod categories;
+// Future submodule (Task 9):
 // pub mod rules;
