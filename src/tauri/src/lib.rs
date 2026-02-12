@@ -21,13 +21,41 @@ use log::{error, warn};
 use std::sync::{Arc, Mutex};
 use std::thread::JoinHandle;
 use tauri::{
-    menu::{Menu, MenuItem},
-    tray::TrayIconBuilder,
-    Manager,
+    menu::{Menu, MenuItem, PredefinedMenuItem},
+    tray::{TrayIcon, TrayIconBuilder},
+    webview::WebviewWindowBuilder,
+    AppHandle, Manager, Wry,
 };
 
 /// Holds the tracker thread handle for graceful shutdown
 pub struct TrackerHandle(Mutex<Option<JoinHandle<()>>>);
+
+/// Holds the tray icon for dynamic menu updates
+pub struct TrayHandle(Mutex<Option<TrayIcon<Wry>>>);
+
+/// Build the tray menu based on current focus state
+fn build_tray_menu(app: &AppHandle) -> Result<Menu<Wry>, Box<dyn std::error::Error>> {
+    let focus_active = if let Some(focus_manager) = app.try_state::<Arc<FocusManager>>() {
+        focus_manager.get_state().map(|s| s.active).unwrap_or(false)
+    } else {
+        false
+    };
+
+    let open = MenuItem::with_id(app, "open", "Open Foxus", true, None::<&str>)?;
+    let separator = PredefinedMenuItem::separator(app)?;
+
+    if focus_active {
+        let end_focus = MenuItem::with_id(app, "end_focus", "End Focus Session", true, None::<&str>)?;
+        let quit = MenuItem::with_id(app, "quit", "Quit Foxus", true, None::<&str>)?;
+        Ok(Menu::with_items(app, &[&open, &separator, &end_focus, &separator, &quit])?)
+    } else {
+        let focus_10 = MenuItem::with_id(app, "focus_10", "Start Focus (10 min)", true, None::<&str>)?;
+        let focus_25 = MenuItem::with_id(app, "focus_25", "Start Focus (25 min)", true, None::<&str>)?;
+        let focus_60 = MenuItem::with_id(app, "focus_60", "Start Focus (1 hour)", true, None::<&str>)?;
+        let quit = MenuItem::with_id(app, "quit", "Quit Foxus", true, None::<&str>)?;
+        Ok(Menu::with_items(app, &[&open, &separator, &focus_10, &focus_25, &focus_60, &separator, &quit])?)
+    }
+}
 
 /// Error type for Foxus initialization failures
 #[derive(Debug)]
@@ -130,18 +158,72 @@ pub fn run() {
             app.manage(tracker);
             app.manage(tracker_handle);
 
-            // Setup tray
+            // Setup tray with initial menu
+            let open = MenuItem::with_id(app, "open", "Open Foxus", true, None::<&str>)?;
+            let separator = PredefinedMenuItem::separator(app)?;
+            let focus_10 = MenuItem::with_id(app, "focus_10", "Start Focus (10 min)", true, None::<&str>)?;
+            let focus_25 = MenuItem::with_id(app, "focus_25", "Start Focus (25 min)", true, None::<&str>)?;
+            let focus_60 = MenuItem::with_id(app, "focus_60", "Start Focus (1 hour)", true, None::<&str>)?;
             let quit = MenuItem::with_id(app, "quit", "Quit Foxus", true, None::<&str>)?;
-            let menu = Menu::with_items(app, &[&quit])?;
+            let menu = Menu::with_items(app, &[&open, &separator, &focus_10, &focus_25, &focus_60, &separator, &quit])?;
 
-            let _tray = TrayIconBuilder::new()
+            let tray = TrayIconBuilder::new()
                 .icon(app.default_window_icon().unwrap().clone())
                 .icon_as_template(true)
                 .menu(&menu)
                 .show_menu_on_left_click(true)
                 .tooltip("Foxus")
                 .on_menu_event(|app, event| {
-                    if event.id == "quit" {
+                    let event_id = event.id.as_ref();
+
+                    // Handle focus session actions
+                    if event_id.starts_with("focus_") || event_id == "end_focus" {
+                        if let Some(focus_manager) = app.try_state::<Arc<FocusManager>>() {
+                            let result = match event_id {
+                                "focus_10" => focus_manager.start_session(10 * 60).map(|_| ()),
+                                "focus_25" => focus_manager.start_session(25 * 60).map(|_| ()),
+                                "focus_60" => focus_manager.start_session(60 * 60).map(|_| ()),
+                                "end_focus" => focus_manager.end_session().map(|_| ()),
+                                _ => Ok(()),
+                            };
+
+                            if let Err(e) = result {
+                                error!("Failed to handle focus action: {}", e);
+                            }
+
+                            // Update tray menu to reflect new focus state
+                            if let Some(tray_handle) = app.try_state::<TrayHandle>() {
+                                if let Ok(guard) = tray_handle.0.lock() {
+                                    if let Some(tray) = guard.as_ref() {
+                                        match build_tray_menu(app) {
+                                            Ok(new_menu) => {
+                                                if let Err(e) = tray.set_menu(Some(new_menu)) {
+                                                    error!("Failed to update tray menu: {}", e);
+                                                }
+                                            }
+                                            Err(e) => error!("Failed to build tray menu: {}", e),
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    } else if event_id == "open" {
+                        // Show existing window or create new one
+                        if let Some(window) = app.get_webview_window("main") {
+                            let _ = window.show();
+                            let _ = window.set_focus();
+                        } else {
+                            match WebviewWindowBuilder::new(app, "main", tauri::WebviewUrl::default())
+                                .title("Foxus")
+                                .inner_size(420.0, 600.0)
+                                .resizable(false)
+                                .build()
+                            {
+                                Ok(_) => {}
+                                Err(e) => error!("Failed to create window: {}", e),
+                            }
+                        }
+                    } else if event_id == "quit" {
                         // Gracefully stop the tracker before exiting
                         if let Some(tracker) = app.try_state::<Arc<TrackerService>>() {
                             tracker.stop();
@@ -158,6 +240,9 @@ pub fn run() {
                     }
                 })
                 .build(app)?;
+
+            // Store tray handle for dynamic menu updates
+            app.manage(TrayHandle(Mutex::new(Some(tray))));
 
             Ok(())
         })
