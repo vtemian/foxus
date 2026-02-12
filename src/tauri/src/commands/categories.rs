@@ -1,4 +1,4 @@
-// src/tauri/src/new_commands/categories.rs
+// src/tauri/src/commands/categories.rs
 
 use crate::db::{with_connection, with_connection_mapped, Database};
 use crate::models::Category;

@@ -1,4 +1,4 @@
-// src/tauri/src/new_commands/focus.rs
+// src/tauri/src/commands/focus.rs
 
 use crate::db::{with_connection, Database};
 use crate::focus::FocusManager;

@@ -1,6 +1,6 @@
-// src/tauri/src/new_commands/mod.rs
+// src/tauri/src/commands/mod.rs
 //
-// New commands module structure (will replace commands.rs in Task 10).
+// Commands module - provides Tauri IPC command handlers organized by feature.
 
 mod dtos;
 pub mod categories;

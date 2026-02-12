@@ -1,4 +1,4 @@
-// src/tauri/src/new_commands/rules.rs
+// src/tauri/src/commands/rules.rs
 
 use crate::categorizer::Categorizer;
 use crate::db::Database;

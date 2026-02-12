@@ -1,4 +1,4 @@
-// src/tauri/src/new_commands/stats.rs
+// src/tauri/src/commands/stats.rs
 
 use crate::constants::SECS_PER_DAY;
 use crate::db::Database;
