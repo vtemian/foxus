@@ -24,7 +24,7 @@ use tauri::{
     menu::{Menu, MenuItem, PredefinedMenuItem},
     tray::{TrayIcon, TrayIconBuilder},
     webview::WebviewWindowBuilder,
-    AppHandle, Manager, Wry,
+    AppHandle, Manager, RunEvent, Wry,
 };
 
 /// Holds the tracker thread handle for graceful shutdown
@@ -217,6 +217,9 @@ pub fn run() {
                                 .title("Foxus")
                                 .inner_size(420.0, 600.0)
                                 .resizable(false)
+                                .visible(true)
+                                .focused(true)
+                                .center()
                                 .build()
                             {
                                 Ok(_) => {}
@@ -267,6 +270,13 @@ pub fn run() {
             commands::update_rule,
             commands::delete_rule,
         ])
-        .run(tauri::generate_context!())
-        .expect("error while running tauri application");
+        .build(tauri::generate_context!())
+        .expect("error while building tauri application")
+        .run(|_app, event| {
+            // Prevent the app from exiting when all windows are closed
+            // This is essential for tray-only apps
+            if let RunEvent::ExitRequested { api, .. } = event {
+                api.prevent_exit();
+            }
+        });
 }
