@@ -216,7 +216,7 @@ pub fn run() {
                             match WebviewWindowBuilder::new(app, "main", tauri::WebviewUrl::default())
                                 .title("Foxus")
                                 .inner_size(420.0, 600.0)
-                                .resizable(false)
+                                .resizable(true)
                                 .visible(true)
                                 .focused(true)
                                 .center()
