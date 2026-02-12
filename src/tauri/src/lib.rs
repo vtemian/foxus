@@ -158,6 +158,15 @@ pub fn run() {
             app.manage(tracker);
             app.manage(tracker_handle);
 
+            // Create main window at startup (hidden)
+            let _main_window = WebviewWindowBuilder::new(app, "main", tauri::WebviewUrl::default())
+                .title("Foxus")
+                .inner_size(420.0, 600.0)
+                .resizable(true)
+                .visible(false)
+                .center()
+                .build()?;
+
             // Setup tray with initial menu
             let open = MenuItem::with_id(app, "open", "Open Foxus", true, None::<&str>)?;
             let separator = PredefinedMenuItem::separator(app)?;
@@ -208,30 +217,10 @@ pub fn run() {
                             }
                         }
                     } else if event_id == "open" {
-                        // Activate the app first (required on macOS for tray-only apps)
-                        #[cfg(target_os = "macos")]
-                        {
-                            use tauri::ActivationPolicy;
-                            let _ = app.set_activation_policy(ActivationPolicy::Regular);
-                        }
-
-                        // Show existing window or create new one
+                        // Show the main window
                         if let Some(window) = app.get_webview_window("main") {
                             let _ = window.show();
                             let _ = window.set_focus();
-                        } else {
-                            match WebviewWindowBuilder::new(app, "main", tauri::WebviewUrl::default())
-                                .title("Foxus")
-                                .inner_size(420.0, 600.0)
-                                .resizable(true)
-                                .visible(true)
-                                .focused(true)
-                                .center()
-                                .build()
-                            {
-                                Ok(_) => {}
-                                Err(e) => error!("Failed to create window: {}", e),
-                            }
                         }
                     } else if event_id == "quit" {
                         // Gracefully stop the tracker before exiting
