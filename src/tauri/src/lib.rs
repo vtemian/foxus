@@ -183,7 +183,7 @@ pub fn run() {
                 .show_menu_on_left_click(true)
                 .tooltip("Foxus")
                 .on_menu_event(|app, event| {
-                    let event_id = event.id.as_ref();
+                    let event_id = event.id.0.as_str();
 
                     // Handle focus session actions
                     if event_id.starts_with("focus_") || event_id == "end_focus" {
