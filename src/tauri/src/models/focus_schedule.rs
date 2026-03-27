@@ -176,16 +176,7 @@ impl FocusSchedule {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::db::{migrations, Database};
-    use tempfile::{tempdir, TempDir};
-
-    fn setup_db() -> (Database, TempDir) {
-        let dir = tempdir().unwrap();
-        let db_path = dir.path().join("test.db");
-        let db = Database::open(&db_path).unwrap();
-        migrations::run(db.connection()).unwrap();
-        (db, dir)
-    }
+    use crate::test_utils::setup_test_db;
 
     #[test]
     fn test_new_creates_schedule() {
@@ -201,7 +192,7 @@ mod tests {
 
     #[test]
     fn test_save_assigns_id() {
-        let (db, _dir) = setup_db();
+        let (db, _dir) = setup_test_db();
         let conn = db.connection();
 
         let mut schedule = FocusSchedule::new("1,2,3,4,5", "09:00", "12:00", 600);
@@ -213,7 +204,7 @@ mod tests {
 
     #[test]
     fn test_find_all() {
-        let (db, _dir) = setup_db();
+        let (db, _dir) = setup_test_db();
         let conn = db.connection();
 
         let mut s1 = FocusSchedule::new("1,2,3,4,5", "09:00", "12:00", 600);
@@ -228,7 +219,7 @@ mod tests {
 
     #[test]
     fn test_find_enabled() {
-        let (db, _dir) = setup_db();
+        let (db, _dir) = setup_test_db();
         let conn = db.connection();
 
         let mut s1 = FocusSchedule::new("1,2,3,4,5", "09:00", "12:00", 600);
@@ -245,7 +236,7 @@ mod tests {
 
     #[test]
     fn test_find_by_id() {
-        let (db, _dir) = setup_db();
+        let (db, _dir) = setup_test_db();
         let conn = db.connection();
 
         let mut schedule = FocusSchedule::new("1,2,3,4,5", "09:00", "12:00", 600);
@@ -262,7 +253,7 @@ mod tests {
 
     #[test]
     fn test_update() {
-        let (db, _dir) = setup_db();
+        let (db, _dir) = setup_test_db();
         let conn = db.connection();
 
         let mut schedule = FocusSchedule::new("1,2,3,4,5", "09:00", "12:00", 600);
@@ -280,7 +271,7 @@ mod tests {
 
     #[test]
     fn test_delete() {
-        let (db, _dir) = setup_db();
+        let (db, _dir) = setup_test_db();
         let conn = db.connection();
 
         let mut schedule = FocusSchedule::new("1,2,3,4,5", "09:00", "12:00", 600);
@@ -351,7 +342,7 @@ mod tests {
 
     #[test]
     fn test_update_unsaved_returns_error() {
-        let (db, _dir) = setup_db();
+        let (db, _dir) = setup_test_db();
         let conn = db.connection();
 
         let schedule = FocusSchedule::new("1,2,3,4,5", "09:00", "12:00", 600);

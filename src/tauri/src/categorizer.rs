@@ -101,20 +101,11 @@ impl Categorizer {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::db::{migrations, Database};
-    use tempfile::{tempdir, TempDir};
-
-    fn setup_db() -> (Database, TempDir) {
-        let dir = tempdir().unwrap();
-        let db_path = dir.path().join("test.db");
-        let db = Database::open(&db_path).unwrap();
-        migrations::run(db.connection()).unwrap();
-        (db, dir)
-    }
+    use crate::test_utils::setup_test_db;
 
     #[test]
     fn test_categorize_with_no_rules_returns_default() {
-        let (db, _dir) = setup_db();
+        let (db, _dir) = setup_test_db();
         let categorizer = Categorizer::new(db.connection()).unwrap();
 
         let category_id = categorizer.categorize_app("SomeApp", None);
@@ -130,7 +121,7 @@ mod tests {
 
     #[test]
     fn test_categorize_app_with_rule() {
-        let (db, _dir) = setup_db();
+        let (db, _dir) = setup_test_db();
         let conn = db.connection();
 
         let coding = Category::find_all(conn)
@@ -149,7 +140,7 @@ mod tests {
 
     #[test]
     fn test_categorize_domain() {
-        let (db, _dir) = setup_db();
+        let (db, _dir) = setup_test_db();
         let conn = db.connection();
 
         let entertainment = Category::find_all(conn)
@@ -168,7 +159,7 @@ mod tests {
 
     #[test]
     fn test_pattern_with_wildcard() {
-        let (db, _dir) = setup_db();
+        let (db, _dir) = setup_test_db();
         let conn = db.connection();
 
         let coding = Category::find_all(conn)
@@ -200,7 +191,7 @@ mod tests {
 
     #[test]
     fn test_categorize_app_with_window_title_rule() {
-        let (db, _dir) = setup_db();
+        let (db, _dir) = setup_test_db();
         let conn = db.connection();
 
         let coding = Category::find_all(conn)
@@ -229,7 +220,7 @@ mod tests {
 
     #[test]
     fn test_reload_picks_up_new_rules() {
-        let (db, _dir) = setup_db();
+        let (db, _dir) = setup_test_db();
         let conn = db.connection();
 
         let mut categorizer = Categorizer::new(conn).unwrap();
@@ -261,7 +252,7 @@ mod tests {
 
     #[test]
     fn test_higher_priority_rule_wins_when_both_match() {
-        let (db, _dir) = setup_db();
+        let (db, _dir) = setup_test_db();
         let conn = db.connection();
 
         let categories = Category::find_all(conn).unwrap();

@@ -11,10 +11,6 @@ use tempfile::{tempdir, TempDir};
 ///
 /// Returns a tuple of (`Database`, `TempDir`). The `TempDir` must be kept alive
 /// for the duration of the test to prevent the database file from being deleted.
-#[expect(
-    dead_code,
-    reason = "Shared test utility available to all test modules"
-)]
 pub fn setup_test_db() -> (Database, TempDir) {
     let dir = tempdir().expect("Failed to create temp directory for test DB");
     let db_path = dir.path().join("test.db");

@@ -127,16 +127,7 @@ impl FocusSession {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::db::{migrations, Database};
-    use tempfile::{tempdir, TempDir};
-
-    fn setup_db() -> (Database, TempDir) {
-        let dir = tempdir().unwrap();
-        let db_path = dir.path().join("test.db");
-        let db = Database::open(&db_path).unwrap();
-        migrations::run(db.connection()).unwrap();
-        (db, dir)
-    }
+    use crate::test_utils::setup_test_db;
 
     #[test]
     fn test_new_creates_session_with_current_timestamp() {
@@ -160,7 +151,7 @@ mod tests {
 
     #[test]
     fn test_find_active_returns_none_when_no_sessions() {
-        let (db, _dir) = setup_db();
+        let (db, _dir) = setup_test_db();
         let conn = db.connection();
 
         let found = FocusSession::find_active(conn).unwrap();
@@ -169,7 +160,7 @@ mod tests {
 
     #[test]
     fn test_save_assigns_id() {
-        let (db, _dir) = setup_db();
+        let (db, _dir) = setup_test_db();
         let conn = db.connection();
 
         let mut session = FocusSession::new(600, false);
@@ -181,7 +172,7 @@ mod tests {
 
     #[test]
     fn test_create_and_find_active_session() {
-        let (db, _dir) = setup_db();
+        let (db, _dir) = setup_test_db();
         let conn = db.connection();
 
         assert!(FocusSession::find_active(conn).unwrap().is_none());
@@ -197,7 +188,7 @@ mod tests {
 
     #[test]
     fn test_find_active_returns_most_recent() {
-        let (db, _dir) = setup_db();
+        let (db, _dir) = setup_test_db();
         let conn = db.connection();
 
         let mut session1 = FocusSession::new(300, false);
@@ -216,7 +207,7 @@ mod tests {
 
     #[test]
     fn test_end_session() {
-        let (db, _dir) = setup_db();
+        let (db, _dir) = setup_test_db();
         let conn = db.connection();
 
         let mut session = FocusSession::new(600, false);
@@ -230,7 +221,7 @@ mod tests {
 
     #[test]
     fn test_end_session_persists_to_db() {
-        let (db, _dir) = setup_db();
+        let (db, _dir) = setup_test_db();
         let conn = db.connection();
 
         let mut session = FocusSession::new(600, false);
@@ -254,7 +245,7 @@ mod tests {
 
     #[test]
     fn test_add_distraction_time() {
-        let (db, _dir) = setup_db();
+        let (db, _dir) = setup_test_db();
         let conn = db.connection();
 
         let mut session = FocusSession::new(300, false);
@@ -271,7 +262,7 @@ mod tests {
 
     #[test]
     fn test_add_distraction_time_persists_to_db() {
-        let (db, _dir) = setup_db();
+        let (db, _dir) = setup_test_db();
         let conn = db.connection();
 
         let mut session = FocusSession::new(300, false);
@@ -294,7 +285,7 @@ mod tests {
 
     #[test]
     fn test_budget_remaining() {
-        let (db, _dir) = setup_db();
+        let (db, _dir) = setup_test_db();
         let conn = db.connection();
 
         let mut session = FocusSession::new(300, false);
@@ -322,7 +313,7 @@ mod tests {
 
     #[test]
     fn test_is_budget_exhausted() {
-        let (db, _dir) = setup_db();
+        let (db, _dir) = setup_test_db();
         let conn = db.connection();
 
         let mut session = FocusSession::new(300, false);
@@ -347,7 +338,7 @@ mod tests {
 
     #[test]
     fn test_scheduled_flag_persists() {
-        let (db, _dir) = setup_db();
+        let (db, _dir) = setup_test_db();
         let conn = db.connection();
 
         let mut scheduled_session = FocusSession::new(600, true);
@@ -359,7 +350,7 @@ mod tests {
 
     #[test]
     fn test_unscheduled_flag_persists() {
-        let (db, _dir) = setup_db();
+        let (db, _dir) = setup_test_db();
         let conn = db.connection();
 
         let mut unscheduled_session = FocusSession::new(600, false);
@@ -371,7 +362,7 @@ mod tests {
 
     #[test]
     fn test_end_unsaved_session_returns_error() {
-        let (db, _dir) = setup_db();
+        let (db, _dir) = setup_test_db();
         let conn = db.connection();
 
         let mut session = FocusSession::new(600, false);
@@ -383,7 +374,7 @@ mod tests {
 
     #[test]
     fn test_add_distraction_time_unsaved_session_returns_error() {
-        let (db, _dir) = setup_db();
+        let (db, _dir) = setup_test_db();
         let conn = db.connection();
 
         let mut session = FocusSession::new(600, false);

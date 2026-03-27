@@ -10,35 +10,15 @@
     reason = "Native messaging host uses stderr for logging because stdout is reserved for the Chrome protocol"
 )]
 
-use directories::ProjectDirs;
 use foxus_lib::{
     categorizer::Categorizer,
     db::{migrations, Database},
     focus::FocusManager,
+    get_db_path,
     native_host::NativeHost,
+    safe_lock,
 };
 use std::sync::{Arc, Mutex};
-
-/// Get the database path, creating the data directory if needed.
-fn get_db_path() -> Result<std::path::PathBuf, String> {
-    let proj_dirs = ProjectDirs::from("com", "foxus", "Foxus")
-        .ok_or_else(|| "Could not determine project directories".to_string())?;
-    let data_dir = proj_dirs.data_dir();
-    std::fs::create_dir_all(data_dir)
-        .map_err(|e| format!("Could not create data directory: {e}"))?;
-    Ok(data_dir.join("foxus.db"))
-}
-
-/// Lock a mutex, recovering from poisoning if necessary.
-fn safe_lock<T>(mutex: &Mutex<T>) -> std::sync::MutexGuard<'_, T> {
-    match mutex.lock() {
-        Ok(guard) => guard,
-        Err(poisoned) => {
-            eprintln!("Warning: mutex was poisoned, recovering");
-            poisoned.into_inner()
-        }
-    }
-}
 
 fn main() {
     // Initialize with proper error handling
@@ -66,7 +46,7 @@ fn main() {
     let db = Arc::new(Mutex::new(db));
 
     let categorizer = {
-        let db_guard = safe_lock(&db);
+        let db_guard = safe_lock(&db, "Database");
         match Categorizer::new(db_guard.connection()) {
             Ok(cat) => Arc::new(Mutex::new(cat)),
             Err(e) => {

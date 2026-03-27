@@ -74,20 +74,11 @@ impl Category {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::db::{migrations, Database};
-    use tempfile::{tempdir, TempDir};
-
-    fn setup_db() -> (Database, TempDir) {
-        let dir = tempdir().unwrap();
-        let db_path = dir.path().join("test.db");
-        let db = Database::open(&db_path).unwrap();
-        migrations::run(db.connection()).unwrap();
-        (db, dir)
-    }
+    use crate::test_utils::setup_test_db;
 
     #[test]
     fn test_find_all_returns_default_categories() {
-        let (db, _dir) = setup_db();
+        let (db, _dir) = setup_test_db();
         let categories = Category::find_all(db.connection()).unwrap();
         assert!(categories.len() >= 5);
         assert!(categories.iter().any(|c| c.name == "Coding"));
@@ -95,7 +86,7 @@ mod tests {
 
     #[test]
     fn test_create_category() {
-        let (db, _dir) = setup_db();
+        let (db, _dir) = setup_test_db();
         let cat = Category::create(db.connection(), "Testing", 1).unwrap();
         assert_eq!(cat.name, "Testing");
         assert_eq!(cat.productivity, 1);

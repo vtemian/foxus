@@ -134,21 +134,12 @@ impl Rule {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::db::{migrations, Database};
     use crate::models::Category;
-    use tempfile::{tempdir, TempDir};
-
-    fn setup_db() -> (Database, TempDir) {
-        let dir = tempdir().unwrap();
-        let db_path = dir.path().join("test.db");
-        let db = Database::open(&db_path).unwrap();
-        migrations::run(db.connection()).unwrap();
-        (db, dir)
-    }
+    use crate::test_utils::setup_test_db;
 
     #[test]
     fn test_find_all_returns_default_rules() {
-        let (db, _dir) = setup_db();
+        let (db, _dir) = setup_test_db();
         let rules = Rule::find_all(db.connection()).unwrap();
         // After migrations, we should have default rules seeded
         assert!(
@@ -173,7 +164,7 @@ mod tests {
 
     #[test]
     fn test_create_rule() {
-        let (db, _dir) = setup_db();
+        let (db, _dir) = setup_test_db();
         let conn = db.connection();
 
         let coding = Category::find_all(conn)
@@ -192,7 +183,7 @@ mod tests {
 
     #[test]
     fn test_find_all_returns_rules_ordered_by_priority_desc() {
-        let (db, _dir) = setup_db();
+        let (db, _dir) = setup_test_db();
         let conn = db.connection();
 
         let coding = Category::find_all(conn)

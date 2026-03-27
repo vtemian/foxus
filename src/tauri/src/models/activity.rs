@@ -102,21 +102,12 @@ impl Activity {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::db::{migrations, Database};
     use crate::models::Category;
-    use tempfile::{tempdir, TempDir};
-
-    fn setup_db() -> (Database, TempDir) {
-        let dir = tempdir().unwrap();
-        let db_path = dir.path().join("test.db");
-        let db = Database::open(&db_path).unwrap();
-        migrations::run(db.connection()).unwrap();
-        (db, dir)
-    }
+    use crate::test_utils::setup_test_db;
 
     #[test]
     fn test_save_and_find_activity() {
-        let (db, _dir) = setup_db();
+        let (db, _dir) = setup_test_db();
         let now = 1_700_000_000_i64;
 
         let mut activity = Activity::new(now, 5, "app", Some("VSCode"), Some("main.rs"));
@@ -129,7 +120,7 @@ mod tests {
 
     #[test]
     fn test_total_duration_by_category() {
-        let (db, _dir) = setup_db();
+        let (db, _dir) = setup_test_db();
         let conn = db.connection();
         let now = 1_700_000_000_i64;
 

@@ -93,7 +93,7 @@ impl std::fmt::Display for InitError {
 
 impl std::error::Error for InitError {}
 
-fn get_db_path() -> Result<std::path::PathBuf, InitError> {
+pub fn get_db_path() -> Result<std::path::PathBuf, InitError> {
     let proj_dirs = ProjectDirs::from("com", "foxus", "Foxus").ok_or(InitError::NoProjectDirs)?;
     let data_dir = proj_dirs.data_dir();
     std::fs::create_dir_all(data_dir).map_err(InitError::DataDirCreation)?;
@@ -101,7 +101,7 @@ fn get_db_path() -> Result<std::path::PathBuf, InitError> {
 }
 
 /// Lock a mutex, recovering from poisoning if necessary
-fn safe_lock<'a, T>(mutex: &'a Mutex<T>, context: &str) -> std::sync::MutexGuard<'a, T> {
+pub fn safe_lock<'a, T>(mutex: &'a Mutex<T>, context: &str) -> std::sync::MutexGuard<'a, T> {
     match mutex.lock() {
         Ok(guard) => guard,
         Err(poisoned) => {
