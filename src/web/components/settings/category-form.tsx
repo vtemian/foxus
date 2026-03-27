@@ -37,8 +37,8 @@ const CategoryForm = ({ initial, onSave, onCancel }: CategoryFormProps) => {
     setSaving(true);
     try {
       await onSave(name.trim(), productivity);
-    } catch {
-      // Error handled by hook
+    } catch (error: unknown) {
+      console.error("Failed to save category:", error);
     } finally {
       setSaving(false);
     }

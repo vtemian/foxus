@@ -1,4 +1,5 @@
 import { Cell, Legend, Pie, PieChart, ResponsiveContainer } from "recharts";
+import { CHART_HEIGHT } from "@/utils/constants";
 import { formatTime } from "@/utils/formatters";
 
 interface ProductivityPieChartProps {
@@ -32,7 +33,6 @@ interface LegendContentProps {
 const PIE_INNER_RADIUS = 40;
 const PIE_OUTER_RADIUS = 60;
 const PIE_PADDING_ANGLE = 2;
-const CHART_HEIGHT = 180;
 
 const LegendContent = ({ payload, data }: LegendContentProps) => {
   if (!payload) return null;

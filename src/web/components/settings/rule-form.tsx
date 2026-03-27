@@ -121,8 +121,8 @@ const RuleForm = ({ initial, categories, onSave, onCancel }: RuleFormProps) => {
     state.setSaving(true);
     try {
       await onSave(state.pattern.trim(), state.matchType, state.categoryId, state.priority);
-    } catch {
-      // Error handled by hook
+    } catch (error: unknown) {
+      console.error("Failed to save rule:", error);
     } finally {
       state.setSaving(false);
     }
