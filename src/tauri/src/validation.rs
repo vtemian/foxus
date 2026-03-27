@@ -1,8 +1,11 @@
-use crate::constants::*;
+use crate::constants::{
+    MAX_BUDGET_MINUTES, MAX_BUDGET_SECS, MAX_CATEGORY_NAME_LEN, MAX_RULE_PATTERN_LEN,
+    MAX_RULE_PRIORITY,
+};
 use crate::error::AppError;
 
 /// Validate focus session budget in minutes.
-/// Returns Ok(budget_secs) if valid.
+/// Returns `Ok(budget_secs)` if valid.
 pub fn validate_budget_minutes(budget_minutes: i32) -> Result<i32, AppError> {
     if budget_minutes <= 0 {
         return Err(AppError::InvalidInput {
@@ -13,7 +16,7 @@ pub fn validate_budget_minutes(budget_minutes: i32) -> Result<i32, AppError> {
     if budget_minutes > MAX_BUDGET_MINUTES {
         return Err(AppError::InvalidInput {
             field: "budget_minutes",
-            reason: format!("cannot exceed {} minutes", MAX_BUDGET_MINUTES),
+            reason: format!("cannot exceed {MAX_BUDGET_MINUTES} minutes"),
         });
     }
     Ok(budget_minutes * 60)
@@ -60,7 +63,7 @@ pub fn validate_time_format(time: &str) -> Result<(), AppError> {
     Ok(())
 }
 
-/// Validate days_of_week format (comma-separated day numbers 1-7).
+/// Validate `days_of_week` format (comma-separated day numbers 1-7).
 pub fn validate_days_of_week(days: &str) -> Result<(), AppError> {
     if days.is_empty() {
         return Err(AppError::InvalidInput {
@@ -78,7 +81,7 @@ pub fn validate_days_of_week(days: &str) -> Result<(), AppError> {
         if !(1..=7).contains(&day) {
             return Err(AppError::InvalidInput {
                 field: "days_of_week",
-                reason: format!("day must be 1-7, got {}", day),
+                reason: format!("day must be 1-7, got {day}"),
             });
         }
     }
@@ -109,7 +112,7 @@ pub fn validate_category_name(name: &str) -> Result<&str, AppError> {
     if name.len() > MAX_CATEGORY_NAME_LEN {
         return Err(AppError::InvalidInput {
             field: "name",
-            reason: format!("cannot exceed {} characters", MAX_CATEGORY_NAME_LEN),
+            reason: format!("cannot exceed {MAX_CATEGORY_NAME_LEN} characters"),
         });
     }
     Ok(name)
@@ -127,7 +130,7 @@ pub fn validate_rule_pattern(pattern: &str) -> Result<&str, AppError> {
     if pattern.len() > MAX_RULE_PATTERN_LEN {
         return Err(AppError::InvalidInput {
             field: "pattern",
-            reason: format!("cannot exceed {} characters", MAX_RULE_PATTERN_LEN),
+            reason: format!("cannot exceed {MAX_RULE_PATTERN_LEN} characters"),
         });
     }
     Ok(pattern)
@@ -138,7 +141,7 @@ pub fn validate_rule_priority(priority: i32) -> Result<(), AppError> {
     if !(0..=MAX_RULE_PRIORITY).contains(&priority) {
         return Err(AppError::InvalidInput {
             field: "priority",
-            reason: format!("must be 0-{}", MAX_RULE_PRIORITY),
+            reason: format!("must be 0-{MAX_RULE_PRIORITY}"),
         });
     }
     Ok(())

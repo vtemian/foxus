@@ -23,6 +23,10 @@ fn reload_categorizer(
 }
 
 #[tauri::command]
+#[expect(
+    clippy::needless_pass_by_value,
+    reason = "Tauri command handlers receive owned deserialized values"
+)]
 pub fn get_rules(db: State<Arc<Mutex<Database>>>) -> Result<Vec<RuleResponse>, String> {
     let db = db.lock().map_err(|_| AppError::LockPoisoned.to_string())?;
     let rules = Rule::find_all(db.connection()).map_err(|e| AppError::from(e).to_string())?;
@@ -30,6 +34,10 @@ pub fn get_rules(db: State<Arc<Mutex<Database>>>) -> Result<Vec<RuleResponse>, S
 }
 
 #[tauri::command]
+#[expect(
+    clippy::needless_pass_by_value,
+    reason = "Tauri command handlers receive owned deserialized values"
+)]
 pub fn create_rule(
     db: State<Arc<Mutex<Database>>>,
     categorizer: State<Arc<Mutex<Categorizer>>>,
@@ -68,6 +76,10 @@ pub fn create_rule(
 }
 
 #[tauri::command]
+#[expect(
+    clippy::needless_pass_by_value,
+    reason = "Tauri command handlers receive owned deserialized values"
+)]
 pub fn update_rule(
     db: State<Arc<Mutex<Database>>>,
     categorizer: State<Arc<Mutex<Categorizer>>>,
@@ -107,6 +119,10 @@ pub fn update_rule(
 }
 
 #[tauri::command]
+#[expect(
+    clippy::needless_pass_by_value,
+    reason = "Tauri command handlers receive owned deserialized values"
+)]
 pub fn delete_rule(
     db: State<Arc<Mutex<Database>>>,
     categorizer: State<Arc<Mutex<Categorizer>>>,

@@ -26,8 +26,8 @@ impl Activity {
             timestamp,
             duration_secs,
             source: source.to_string(),
-            app_name: app_name.map(|s| s.to_string()),
-            window_title: window_title.map(|s| s.to_string()),
+            app_name: app_name.map(ToString::to_string),
+            window_title: window_title.map(ToString::to_string),
             url: None,
             domain: None,
             category_id: None,
@@ -54,8 +54,10 @@ impl Activity {
     }
 
     /// Find activities within a time range.
-    /// Currently used in tests; kept as part of the public API for future use.
-    #[allow(dead_code)]
+    #[cfg_attr(
+        not(test),
+        expect(dead_code, reason = "Public API for future activity querying")
+    )]
     pub fn find_in_range(conn: &Connection, start: i64, end: i64) -> Result<Vec<Self>> {
         let mut stmt = conn.prepare(
             "SELECT id, timestamp, duration_secs, source, app_name, window_title, url, domain, category_id
@@ -115,7 +117,7 @@ mod tests {
     #[test]
     fn test_save_and_find_activity() {
         let (db, _dir) = setup_db();
-        let now = 1700000000i64;
+        let now = 1_700_000_000_i64;
 
         let mut activity = Activity::new(now, 5, "app", Some("VSCode"), Some("main.rs"));
         activity.save(db.connection()).unwrap();
@@ -129,7 +131,7 @@ mod tests {
     fn test_total_duration_by_category() {
         let (db, _dir) = setup_db();
         let conn = db.connection();
-        let now = 1700000000i64;
+        let now = 1_700_000_000_i64;
 
         let categories = Category::find_all(conn).unwrap();
         let coding_id = categories.iter().find(|c| c.name == "Coding").unwrap().id;

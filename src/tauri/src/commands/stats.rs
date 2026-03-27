@@ -9,6 +9,10 @@ use tauri::State;
 use super::{AppStat, DailyStats, StatsResponse, WeeklyStatsResponse};
 
 #[tauri::command]
+#[expect(
+    clippy::needless_pass_by_value,
+    reason = "Tauri command handlers receive owned deserialized values"
+)]
 pub fn get_today_stats(db: State<Arc<Mutex<Database>>>) -> Result<StatsResponse, String> {
     let db = db.lock().map_err(|_| AppError::LockPoisoned.to_string())?;
     let conn = db.connection();
@@ -30,6 +34,10 @@ pub fn get_today_stats(db: State<Arc<Mutex<Database>>>) -> Result<StatsResponse,
 }
 
 #[tauri::command]
+#[expect(
+    clippy::needless_pass_by_value,
+    reason = "Tauri command handlers receive owned deserialized values"
+)]
 pub fn get_weekly_stats(db: State<Arc<Mutex<Database>>>) -> Result<WeeklyStatsResponse, String> {
     let db = db.lock().map_err(|_| AppError::LockPoisoned.to_string())?;
     let conn = db.connection();
@@ -75,6 +83,10 @@ pub fn get_weekly_stats(db: State<Arc<Mutex<Database>>>) -> Result<WeeklyStatsRe
     })
 }
 
+#[expect(
+    clippy::cast_possible_wrap,
+    reason = "Unix timestamps won't exceed i64::MAX until year 292 billion"
+)]
 fn get_current_timestamp() -> Result<i64, String> {
     SystemTime::now()
         .duration_since(UNIX_EPOCH)
@@ -109,6 +121,11 @@ fn calculate_productivity_totals(
     Ok((productive_secs, neutral_secs, distracting_secs))
 }
 
+#[expect(
+    clippy::cast_possible_truncation,
+    clippy::cast_possible_wrap,
+    reason = "limit is always a small value (5 or 10), well within i32 range"
+)]
 fn query_top_apps(
     conn: &rusqlite::Connection,
     start: i64,
@@ -136,7 +153,7 @@ fn query_top_apps(
             })
         })
         .map_err(|e| AppError::from(e).to_string())?
-        .filter_map(|r| r.ok())
+        .filter_map(Result::ok)
         .collect();
 
     Ok(top_apps)

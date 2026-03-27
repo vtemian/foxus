@@ -44,7 +44,7 @@ impl FocusSchedule {
                 self.start_time,
                 self.end_time,
                 self.distraction_budget,
-                self.enabled as i32,
+                i32::from(self.enabled),
             ],
         )?;
         self.id = Some(conn.last_insert_rowid());
@@ -67,7 +67,7 @@ impl FocusSchedule {
                 self.start_time,
                 self.end_time,
                 self.distraction_budget,
-                self.enabled as i32,
+                i32::from(self.enabled),
                 id,
             ],
         )?;
@@ -164,7 +164,7 @@ impl FocusSchedule {
         self.enabled && self.applies_to_day(day) && self.is_time_in_range(time)
     }
 
-    /// Parse days_of_week string into a vector of day numbers.
+    /// Parse `days_of_week` string into a vector of day numbers.
     pub fn get_days(&self) -> Vec<u32> {
         self.days_of_week
             .split(',')

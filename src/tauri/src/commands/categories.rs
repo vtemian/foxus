@@ -8,12 +8,20 @@ use tauri::State;
 use super::CategoryResponse;
 
 #[tauri::command]
+#[expect(
+    clippy::needless_pass_by_value,
+    reason = "Tauri command handlers receive owned deserialized values"
+)]
 pub fn get_categories(db: State<Arc<Mutex<Database>>>) -> Result<Vec<CategoryResponse>, String> {
-    let categories = with_connection(&db, |conn| Category::find_all(conn))?;
+    let categories = with_connection(&db, Category::find_all)?;
     Ok(categories.into_iter().map(CategoryResponse::from).collect())
 }
 
 #[tauri::command]
+#[expect(
+    clippy::needless_pass_by_value,
+    reason = "Tauri command handlers receive owned deserialized values"
+)]
 pub fn create_category(
     db: State<Arc<Mutex<Database>>>,
     name: String,
@@ -34,6 +42,10 @@ pub fn create_category(
 }
 
 #[tauri::command]
+#[expect(
+    clippy::needless_pass_by_value,
+    reason = "Tauri command handlers receive owned deserialized values"
+)]
 pub fn update_category(
     db: State<Arc<Mutex<Database>>>,
     id: i64,
@@ -55,6 +67,10 @@ pub fn update_category(
 }
 
 #[tauri::command]
+#[expect(
+    clippy::needless_pass_by_value,
+    reason = "Tauri command handlers receive owned deserialized values"
+)]
 pub fn delete_category(db: State<Arc<Mutex<Database>>>, id: i64) -> Result<bool, String> {
     let result = with_connection(&db, |conn| Category::delete(conn, id)).map_err(|e| match &e {
         AppError::Database(db_err) if is_fk_violation(db_err) => AppError::DeleteFailed {

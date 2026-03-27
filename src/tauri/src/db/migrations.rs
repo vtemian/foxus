@@ -65,7 +65,7 @@ fn seed_default_rules(conn: &Connection) -> Result<()> {
     let categories: std::collections::HashMap<String, i64> = conn
         .prepare("SELECT name, id FROM categories")?
         .query_map([], |row| Ok((row.get(0)?, row.get(1)?)))?
-        .filter_map(|r| r.ok())
+        .filter_map(Result::ok)
         .collect();
 
     for (pattern, match_type, category_name) in DEFAULT_RULES {

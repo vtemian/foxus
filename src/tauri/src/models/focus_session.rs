@@ -11,6 +11,10 @@ pub struct FocusSession {
     pub distraction_used: i32,
 }
 
+#[expect(
+    clippy::cast_possible_wrap,
+    reason = "Unix timestamps won't exceed i64::MAX until year 292 billion"
+)]
 fn current_timestamp() -> i64 {
     SystemTime::now()
         .duration_since(UNIX_EPOCH)
@@ -37,7 +41,7 @@ impl FocusSession {
             params![
                 self.started_at,
                 self.ended_at,
-                self.scheduled as i32,
+                i32::from(self.scheduled),
                 self.distraction_budget,
                 self.distraction_used,
             ],
@@ -68,7 +72,7 @@ impl FocusSession {
         }
     }
 
-    /// Ends the focus session by setting the ended_at timestamp.
+    /// Ends the focus session by setting the `ended_at` timestamp.
     /// Returns an error if the session has not been saved yet (id is None).
     pub fn end(&mut self, conn: &Connection) -> Result<()> {
         let id = self.id.ok_or_else(|| {

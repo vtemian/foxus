@@ -13,6 +13,10 @@ use super::{
 };
 
 #[tauri::command]
+#[expect(
+    clippy::needless_pass_by_value,
+    reason = "Tauri command handlers receive owned deserialized values"
+)]
 pub fn get_focus_state(
     focus_manager: State<Arc<FocusManager>>,
 ) -> Result<FocusStateResponse, String> {
@@ -27,6 +31,10 @@ pub fn get_focus_state(
 }
 
 #[tauri::command]
+#[expect(
+    clippy::needless_pass_by_value,
+    reason = "Tauri command handlers receive owned deserialized values"
+)]
 pub fn start_focus_session(
     focus_manager: State<Arc<FocusManager>>,
     budget_minutes: i32,
@@ -39,6 +47,10 @@ pub fn start_focus_session(
 }
 
 #[tauri::command]
+#[expect(
+    clippy::needless_pass_by_value,
+    reason = "Tauri command handlers receive owned deserialized values"
+)]
 pub fn end_focus_session(focus_manager: State<Arc<FocusManager>>) -> Result<(), String> {
     focus_manager
         .end_session()
@@ -47,10 +59,14 @@ pub fn end_focus_session(focus_manager: State<Arc<FocusManager>>) -> Result<(), 
 }
 
 #[tauri::command]
+#[expect(
+    clippy::needless_pass_by_value,
+    reason = "Tauri command handlers receive owned deserialized values"
+)]
 pub fn get_focus_schedules(
     db: State<Arc<Mutex<Database>>>,
 ) -> Result<Vec<FocusScheduleResponse>, String> {
-    let schedules = with_connection(&db, |conn| FocusSchedule::find_all(conn))?;
+    let schedules = with_connection(&db, FocusSchedule::find_all)?;
     Ok(schedules
         .into_iter()
         .map(FocusScheduleResponse::from)
@@ -58,6 +74,10 @@ pub fn get_focus_schedules(
 }
 
 #[tauri::command]
+#[expect(
+    clippy::needless_pass_by_value,
+    reason = "Tauri command handlers receive owned deserialized values"
+)]
 pub fn create_focus_schedule(
     db: State<Arc<Mutex<Database>>>,
     request: CreateScheduleRequest,
@@ -86,6 +106,10 @@ pub fn create_focus_schedule(
 }
 
 #[tauri::command]
+#[expect(
+    clippy::needless_pass_by_value,
+    reason = "Tauri command handlers receive owned deserialized values"
+)]
 pub fn update_focus_schedule(
     db: State<Arc<Mutex<Database>>>,
     request: UpdateScheduleRequest,
@@ -123,12 +147,20 @@ pub fn update_focus_schedule(
 }
 
 #[tauri::command]
+#[expect(
+    clippy::needless_pass_by_value,
+    reason = "Tauri command handlers receive owned deserialized values"
+)]
 pub fn delete_focus_schedule(db: State<Arc<Mutex<Database>>>, id: i64) -> Result<bool, String> {
     let result = with_connection(&db, |conn| FocusSchedule::delete(conn, id))?;
     Ok(result)
 }
 
 #[tauri::command]
+#[expect(
+    clippy::needless_pass_by_value,
+    reason = "Tauri command handlers receive owned deserialized values"
+)]
 pub fn get_active_schedule(
     focus_manager: State<Arc<FocusManager>>,
 ) -> Result<Option<FocusScheduleResponse>, String> {
@@ -139,6 +171,10 @@ pub fn get_active_schedule(
 }
 
 #[tauri::command]
+#[expect(
+    clippy::needless_pass_by_value,
+    reason = "Tauri command handlers receive owned deserialized values"
+)]
 pub fn check_focus_schedules(focus_manager: State<Arc<FocusManager>>) -> Result<(), String> {
     focus_manager
         .check_schedules()

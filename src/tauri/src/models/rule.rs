@@ -9,9 +9,8 @@ pub enum MatchType {
 
 impl MatchType {
     /// Convert to string representation for database storage.
-    /// Used by Rule::create and in tests.
-    #[allow(dead_code)]
-    pub fn as_str(&self) -> &'static str {
+    /// Used by `Rule::create` and in tests.
+    pub fn as_str(self) -> &'static str {
         match self {
             MatchType::App => "app",
             MatchType::Domain => "domain",
@@ -33,7 +32,6 @@ impl MatchType {
 /// Fields `id` and `priority` are read from the database and used in tests;
 /// kept as part of the public API for future use (e.g., rule editing UI).
 #[derive(Debug, Clone)]
-#[allow(dead_code)]
 pub struct Rule {
     pub id: i64,
     pub pattern: String,
@@ -86,6 +84,8 @@ impl Rule {
     }
 
     /// Find a rule by ID.
+    /// Kept as part of the public API for future use (e.g., rule editing UI).
+    #[expect(dead_code, reason = "Public API for future rule editing UI")]
     pub fn find_by_id(conn: &Connection, id: i64) -> Result<Option<Self>> {
         let mut stmt = conn.prepare(
             "SELECT id, pattern, match_type, category_id, priority FROM rules WHERE id = ?1",

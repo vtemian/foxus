@@ -5,7 +5,7 @@ use rusqlite::Connection;
 use std::sync::{Arc, Mutex, MutexGuard};
 use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 
-/// Minimum interval between use_distraction_time calls (rate limiting).
+/// Minimum interval between `use_distraction_time` calls (rate limiting).
 const DISTRACTION_TIME_RATE_LIMIT: Duration = Duration::from_secs(25);
 
 #[derive(Debug, Clone)]
@@ -18,7 +18,7 @@ pub struct FocusState {
 
 pub struct FocusManager {
     db: Arc<Mutex<Database>>,
-    /// Timestamp of last use_distraction_time call for rate limiting.
+    /// Timestamp of last `use_distraction_time` call for rate limiting.
     last_distraction_request: Mutex<Option<Instant>>,
 }
 
@@ -67,12 +67,16 @@ impl FocusManager {
         }
     }
 
+    #[expect(
+        clippy::cast_possible_wrap,
+        reason = "Unix timestamps won't exceed i64::MAX until year 292 billion"
+    )]
     pub fn get_state(&self) -> rusqlite::Result<FocusState> {
         let db = self.lock_db();
         let conn = db.connection();
 
         let session = FocusSession::find_active(conn)?;
-        let blocked_domains = self.get_blocked_domains(conn)?;
+        let blocked_domains = Self::get_blocked_domains(conn)?;
 
         let (active, budget_remaining, session_duration_secs) = match session {
             Some(s) => {
@@ -104,7 +108,7 @@ impl FocusManager {
             let mut last_request = self
                 .last_distraction_request
                 .lock()
-                .unwrap_or_else(|p| p.into_inner());
+                .unwrap_or_else(std::sync::PoisonError::into_inner);
             let now = Instant::now();
 
             if let Some(last) = *last_request {
@@ -152,11 +156,11 @@ impl FocusManager {
         let mut last_request = self
             .last_distraction_request
             .lock()
-            .unwrap_or_else(|p| p.into_inner());
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
         *last_request = None;
     }
 
-    fn get_blocked_domains(&self, conn: &Connection) -> rusqlite::Result<Vec<String>> {
+    fn get_blocked_domains(conn: &Connection) -> rusqlite::Result<Vec<String>> {
         // Get domains from rules that map to distracting categories
         let mut stmt = conn.prepare(
             "SELECT r.pattern FROM rules r
@@ -179,7 +183,7 @@ impl FocusManager {
         let conn = db.connection();
 
         let (day, time) = get_current_day_and_time();
-        let active_schedule = self.find_active_schedule(conn, day, &time)?;
+        let active_schedule = Self::find_active_schedule(conn, day, &time)?;
         let active_session = FocusSession::find_active(conn)?;
 
         match (active_schedule, active_session) {
@@ -228,11 +232,10 @@ impl FocusManager {
         let db = self.lock_db();
         let conn = db.connection();
         let (day, time) = get_current_day_and_time();
-        self.find_active_schedule(conn, day, &time)
+        Self::find_active_schedule(conn, day, &time)
     }
 
     fn find_active_schedule(
-        &self,
         conn: &Connection,
         day: u32,
         time: &str,
@@ -243,7 +246,7 @@ impl FocusManager {
     }
 
     /// Start a scheduled focus session with the given budget.
-    /// Unlike start_session, this marks the session as scheduled.
+    /// Unlike `start_session`, this marks the session as scheduled.
     pub fn start_scheduled_session(
         &self,
         distraction_budget_secs: i32,
@@ -264,6 +267,10 @@ impl FocusManager {
 }
 
 /// Get the current day of week (1=Monday, 7=Sunday) and time (HH:MM format).
+#[expect(
+    clippy::cast_possible_truncation,
+    reason = "Day-of-week and time values are always small (< 60), well within u32 range"
+)]
 fn get_current_day_and_time() -> (u32, String) {
     let now = SystemTime::now()
         .duration_since(UNIX_EPOCH)
@@ -279,7 +286,7 @@ fn get_current_day_and_time() -> (u32, String) {
     let hours = (seconds_today / 3600) as u32;
     let minutes = ((seconds_today % 3600) / 60) as u32;
 
-    (day_of_week as u32, format!("{:02}:{:02}", hours, minutes))
+    (day_of_week as u32, format!("{hours:02}:{minutes:02}"))
 }
 
 #[cfg(test)]
@@ -430,24 +437,22 @@ mod tests {
 
         // Day should be 1-7
         assert!(
-            day >= 1 && day <= 7,
-            "Day should be between 1 and 7, got {}",
-            day
+            (1..=7).contains(&day),
+            "Day should be between 1 and 7, got {day}"
         );
 
         // Time should be HH:MM format
         assert_eq!(
             time.len(),
             5,
-            "Time should be 5 characters (HH:MM), got {}",
-            time
+            "Time should be 5 characters (HH:MM), got {time}"
         );
         assert_eq!(&time[2..3], ":", "Time should have colon at position 2");
 
         let hours: u32 = time[0..2].parse().unwrap();
         let minutes: u32 = time[3..5].parse().unwrap();
-        assert!(hours < 24, "Hours should be < 24, got {}", hours);
-        assert!(minutes < 60, "Minutes should be < 60, got {}", minutes);
+        assert!(hours < 24, "Hours should be < 24, got {hours}");
+        assert!(minutes < 60, "Minutes should be < 60, got {minutes}");
     }
 
     #[test]

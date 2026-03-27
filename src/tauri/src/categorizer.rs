@@ -28,8 +28,7 @@ impl Categorizer {
         let default_category_id = categories
             .iter()
             .find(|c| c.name == "Uncategorized")
-            .map(|c| c.id)
-            .unwrap_or(1);
+            .map_or(1, |c| c.id);
 
         Ok(Self {
             rules: rules_with_categories,
@@ -41,9 +40,9 @@ impl Categorizer {
         for (rule, _category) in &self.rules {
             let matches = match rule.match_type {
                 MatchType::App => Self::pattern_matches(&rule.pattern, app_name),
-                MatchType::Title => window_title
-                    .map(|t| Self::pattern_matches(&rule.pattern, t))
-                    .unwrap_or(false),
+                MatchType::Title => {
+                    window_title.is_some_and(|t| Self::pattern_matches(&rule.pattern, t))
+                }
                 MatchType::Domain => false,
             };
 

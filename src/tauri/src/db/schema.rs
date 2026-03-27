@@ -1,4 +1,4 @@
-pub const SCHEMA: &str = r#"
+pub const SCHEMA: &str = r"
 CREATE TABLE IF NOT EXISTS categories (
     id INTEGER PRIMARY KEY,
     name TEXT NOT NULL UNIQUE,
@@ -50,7 +50,7 @@ CREATE INDEX IF NOT EXISTS idx_focus_sessions_active ON focus_sessions(ended_at)
 CREATE INDEX IF NOT EXISTS idx_focus_sessions_started_at ON focus_sessions(started_at);
 CREATE INDEX IF NOT EXISTS idx_rules_category ON rules(category_id);
 CREATE INDEX IF NOT EXISTS idx_rules_match_type_priority ON rules(match_type, priority DESC);
-"#;
+";
 
 pub const DEFAULT_CATEGORIES: &[(&str, i32)] = &[
     ("Coding", 1),

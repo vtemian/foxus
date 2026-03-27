@@ -43,6 +43,14 @@ impl TrackerService {
         }
     }
 
+    #[expect(
+        clippy::cast_possible_wrap,
+        reason = "Unix timestamps won't exceed i64::MAX until year 292 billion"
+    )]
+    #[expect(
+        clippy::cast_possible_truncation,
+        reason = "poll_interval_secs is always a small config value (e.g. 5), safe to cast to i32"
+    )]
     pub fn start(&self) -> thread::JoinHandle<()> {
         self.running.store(true, Ordering::SeqCst);
 
@@ -88,13 +96,13 @@ impl TrackerService {
                         match db.lock() {
                             Ok(db_guard) => {
                                 if let Err(e) = activity.save(db_guard.connection()) {
-                                    error!("Failed to save activity: {}", e);
+                                    error!("Failed to save activity: {e}");
                                 }
                             }
                             Err(poisoned) => {
                                 warn!("Database mutex was poisoned, recovering");
                                 if let Err(e) = activity.save(poisoned.into_inner().connection()) {
-                                    error!("Failed to save activity after recovery: {}", e);
+                                    error!("Failed to save activity after recovery: {e}");
                                 }
                             }
                         }
@@ -111,8 +119,10 @@ impl TrackerService {
     }
 
     /// Check if the tracker is currently running.
-    /// Currently used in tests; kept as part of the public API for UI status display.
-    #[allow(dead_code)]
+    #[cfg_attr(
+        not(test),
+        expect(dead_code, reason = "Public API for future UI status display")
+    )]
     pub fn is_running(&self) -> bool {
         self.running.load(Ordering::SeqCst)
     }
@@ -164,8 +174,12 @@ mod tests {
 
     /// Tests that the activity tracking and saving logic works correctly.
     /// This test directly exercises the save logic rather than relying on the
-    /// threaded start() method, which depends on platform-specific window detection.
+    /// threaded `start()` method, which depends on platform-specific window detection.
     #[test]
+    #[expect(
+        clippy::cast_possible_wrap,
+        reason = "Unix timestamps won't exceed i64::MAX until year 292 billion"
+    )]
     fn test_tracker_saves_activities_to_db() {
         use crate::models::Activity;
 

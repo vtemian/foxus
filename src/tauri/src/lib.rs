@@ -83,10 +83,10 @@ impl std::fmt::Display for InitError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             InitError::NoProjectDirs => write!(f, "Could not determine project directories"),
-            InitError::DataDirCreation(e) => write!(f, "Could not create data directory: {}", e),
-            InitError::DatabaseOpen(e) => write!(f, "Failed to open database: {}", e),
-            InitError::Migration(e) => write!(f, "Failed to run database migrations: {}", e),
-            InitError::Categorizer(e) => write!(f, "Failed to initialize categorizer: {}", e),
+            InitError::DataDirCreation(e) => write!(f, "Could not create data directory: {e}"),
+            InitError::DatabaseOpen(e) => write!(f, "Failed to open database: {e}"),
+            InitError::Migration(e) => write!(f, "Failed to run database migrations: {e}"),
+            InitError::Categorizer(e) => write!(f, "Failed to initialize categorizer: {e}"),
         }
     }
 }
@@ -105,71 +105,137 @@ fn safe_lock<'a, T>(mutex: &'a Mutex<T>, context: &str) -> std::sync::MutexGuard
     match mutex.lock() {
         Ok(guard) => guard,
         Err(poisoned) => {
-            warn!("{} mutex was poisoned, recovering", context);
+            warn!("{context} mutex was poisoned, recovering");
             poisoned.into_inner()
         }
     }
+}
+
+/// Initialize database, categorizer, focus manager, and tracker service.
+fn initialize_services(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>> {
+    let db_path = match get_db_path() {
+        Ok(path) => path,
+        Err(e) => {
+            error!("Foxus initialization failed: {e}");
+            return Err(Box::new(e));
+        }
+    };
+
+    let db = match Database::open(&db_path) {
+        Ok(db) => db,
+        Err(e) => {
+            error!("Failed to open database: {e}");
+            return Err(Box::new(InitError::DatabaseOpen(e)));
+        }
+    };
+
+    if let Err(e) = migrations::run(db.connection()) {
+        error!("Failed to run migrations: {e}");
+        return Err(Box::new(InitError::Migration(e)));
+    }
+
+    let db = Arc::new(Mutex::new(db));
+
+    let categorizer = {
+        let db_guard = safe_lock(&db, "Database");
+        match Categorizer::new(db_guard.connection()) {
+            Ok(cat) => Arc::new(Mutex::new(cat)),
+            Err(e) => {
+                error!("Failed to initialize categorizer: {e}");
+                return Err(Box::new(InitError::Categorizer(e)));
+            }
+        }
+    };
+
+    let focus_manager = Arc::new(FocusManager::new(Arc::clone(&db)));
+
+    // Start tracker service
+    let tracker = TrackerService::new(
+        Arc::clone(&db),
+        Arc::clone(&categorizer),
+        TrackerConfig::default(),
+    );
+    let handle = tracker.start();
+    let tracker = Arc::new(tracker);
+    let tracker_handle = TrackerHandle(Mutex::new(Some(handle)));
+
+    // Store in app state
+    app.manage(db);
+    app.manage(categorizer);
+    app.manage(focus_manager);
+    app.manage(tracker);
+    app.manage(tracker_handle);
+
+    Ok(())
+}
+
+/// Handle tray menu events (focus actions, open, quit).
+fn handle_tray_event(app: &AppHandle, event_id: &str) {
+    if event_id.starts_with("focus_") || event_id == "end_focus" {
+        handle_focus_event(app, event_id);
+    } else if event_id == "open" {
+        if let Some(window) = app.get_webview_window("main") {
+            let _ = window.show();
+            let _ = window.set_focus();
+        }
+    } else if event_id == "quit" {
+        handle_quit(app);
+    }
+}
+
+/// Handle focus-related tray menu events.
+fn handle_focus_event(app: &AppHandle, event_id: &str) {
+    if let Some(focus_manager) = app.try_state::<Arc<FocusManager>>() {
+        let result = match event_id {
+            "focus_10" => focus_manager.start_session(10 * 60).map(|_| ()),
+            "focus_25" => focus_manager.start_session(25 * 60).map(|_| ()),
+            "focus_60" => focus_manager.start_session(60 * 60).map(|_| ()),
+            "end_focus" => focus_manager.end_session().map(|_| ()),
+            _ => Ok(()),
+        };
+
+        if let Err(e) = result {
+            error!("Failed to handle focus action: {e}");
+        }
+
+        // Update tray menu to reflect new focus state
+        if let Some(tray_handle) = app.try_state::<TrayHandle>() {
+            if let Ok(guard) = tray_handle.0.lock() {
+                if let Some(tray) = guard.as_ref() {
+                    match build_tray_menu(app) {
+                        Ok(new_menu) => {
+                            if let Err(e) = tray.set_menu(Some(new_menu)) {
+                                error!("Failed to update tray menu: {e}");
+                            }
+                        }
+                        Err(e) => error!("Failed to build tray menu: {e}"),
+                    }
+                }
+            }
+        }
+    }
+}
+
+/// Gracefully stop the tracker and exit the app.
+fn handle_quit(app: &AppHandle) {
+    if let Some(tracker) = app.try_state::<Arc<TrackerService>>() {
+        tracker.stop();
+    }
+    if let Some(handle_state) = app.try_state::<TrackerHandle>() {
+        if let Ok(mut guard) = handle_state.0.lock() {
+            if let Some(handle) = guard.take() {
+                let _ = handle.join();
+            }
+        }
+    }
+    app.exit(0);
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
         .setup(|app| {
-            // Initialize database with proper error handling
-            let db_path = match get_db_path() {
-                Ok(path) => path,
-                Err(e) => {
-                    error!("Foxus initialization failed: {}", e);
-                    return Err(Box::new(e) as Box<dyn std::error::Error>);
-                }
-            };
-
-            let db = match Database::open(&db_path) {
-                Ok(db) => db,
-                Err(e) => {
-                    error!("Failed to open database: {}", e);
-                    return Err(Box::new(InitError::DatabaseOpen(e)) as Box<dyn std::error::Error>);
-                }
-            };
-
-            if let Err(e) = migrations::run(db.connection()) {
-                error!("Failed to run migrations: {}", e);
-                return Err(Box::new(InitError::Migration(e)) as Box<dyn std::error::Error>);
-            }
-
-            let db = Arc::new(Mutex::new(db));
-
-            let categorizer = {
-                let db_guard = safe_lock(&db, "Database");
-                match Categorizer::new(db_guard.connection()) {
-                    Ok(cat) => Arc::new(Mutex::new(cat)),
-                    Err(e) => {
-                        error!("Failed to initialize categorizer: {}", e);
-                        return Err(
-                            Box::new(InitError::Categorizer(e)) as Box<dyn std::error::Error>
-                        );
-                    }
-                }
-            };
-
-            let focus_manager = Arc::new(FocusManager::new(Arc::clone(&db)));
-
-            // Start tracker service
-            let tracker = TrackerService::new(
-                Arc::clone(&db),
-                Arc::clone(&categorizer),
-                TrackerConfig::default(),
-            );
-            let handle = tracker.start();
-            let tracker = Arc::new(tracker);
-            let tracker_handle = TrackerHandle(Mutex::new(Some(handle)));
-
-            // Store in app state
-            app.manage(db);
-            app.manage(categorizer);
-            app.manage(focus_manager);
-            app.manage(tracker);
-            app.manage(tracker_handle);
+            initialize_services(app)?;
 
             // Create main window at startup (hidden)
             let _main_window = WebviewWindowBuilder::new(app, "main", tauri::WebviewUrl::default())
@@ -204,60 +270,7 @@ pub fn run() {
                 .show_menu_on_left_click(true)
                 .tooltip("Foxus")
                 .on_menu_event(|app, event| {
-                    let event_id = event.id.0.as_str();
-
-                    // Handle focus session actions
-                    if event_id.starts_with("focus_") || event_id == "end_focus" {
-                        if let Some(focus_manager) = app.try_state::<Arc<FocusManager>>() {
-                            let result = match event_id {
-                                "focus_10" => focus_manager.start_session(10 * 60).map(|_| ()),
-                                "focus_25" => focus_manager.start_session(25 * 60).map(|_| ()),
-                                "focus_60" => focus_manager.start_session(60 * 60).map(|_| ()),
-                                "end_focus" => focus_manager.end_session().map(|_| ()),
-                                _ => Ok(()),
-                            };
-
-                            if let Err(e) = result {
-                                error!("Failed to handle focus action: {}", e);
-                            }
-
-                            // Update tray menu to reflect new focus state
-                            if let Some(tray_handle) = app.try_state::<TrayHandle>() {
-                                if let Ok(guard) = tray_handle.0.lock() {
-                                    if let Some(tray) = guard.as_ref() {
-                                        match build_tray_menu(app) {
-                                            Ok(new_menu) => {
-                                                if let Err(e) = tray.set_menu(Some(new_menu)) {
-                                                    error!("Failed to update tray menu: {}", e);
-                                                }
-                                            }
-                                            Err(e) => error!("Failed to build tray menu: {}", e),
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    } else if event_id == "open" {
-                        // Show the main window
-                        if let Some(window) = app.get_webview_window("main") {
-                            let _ = window.show();
-                            let _ = window.set_focus();
-                        }
-                    } else if event_id == "quit" {
-                        // Gracefully stop the tracker before exiting
-                        if let Some(tracker) = app.try_state::<Arc<TrackerService>>() {
-                            tracker.stop();
-                        }
-                        if let Some(handle_state) = app.try_state::<TrackerHandle>() {
-                            if let Ok(mut guard) = handle_state.0.lock() {
-                                if let Some(handle) = guard.take() {
-                                    // Wait for tracker thread to finish (with timeout behavior from thread)
-                                    let _ = handle.join();
-                                }
-                            }
-                        }
-                        app.exit(0);
-                    }
+                    handle_tray_event(app, event.id.0.as_str());
                 })
                 .build(app)?;
 

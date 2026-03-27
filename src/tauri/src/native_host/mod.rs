@@ -41,6 +41,9 @@ pub enum OutgoingMessage {
     HardBlocked,
 }
 
+/// Chrome Native Messaging protocol maximum message size (1 MB).
+const MAX_MESSAGE_SIZE: usize = 1024 * 1024;
+
 pub struct NativeHost {
     db: Arc<Mutex<Database>>,
     focus_manager: Arc<FocusManager>,
@@ -62,30 +65,25 @@ impl NativeHost {
 
     pub fn run(&self) -> io::Result<()> {
         loop {
-            let message = self.read_message()?;
+            let message = Self::read_message()?;
             let response = self.handle_message(message);
 
             if let Some(resp) = response {
-                self.write_message(&resp)?;
+                Self::write_message(&resp)?;
             }
         }
     }
 
-    fn read_message(&self) -> io::Result<IncomingMessage> {
+    fn read_message() -> io::Result<IncomingMessage> {
         // Chrome Native Messaging protocol specifies little-endian byte order
         let mut len_bytes = [0u8; 4];
         io::stdin().read_exact(&mut len_bytes)?;
         let len = u32::from_le_bytes(len_bytes) as usize;
 
-        // Chrome limits native messaging to 1MB (1024 * 1024 bytes)
-        const MAX_MESSAGE_SIZE: usize = 1024 * 1024;
         if len > MAX_MESSAGE_SIZE {
             return Err(io::Error::new(
                 io::ErrorKind::InvalidData,
-                format!(
-                    "Message too large: {} bytes (max: {} bytes)",
-                    len, MAX_MESSAGE_SIZE
-                ),
+                format!("Message too large: {len} bytes (max: {MAX_MESSAGE_SIZE} bytes)"),
             ));
         }
 
@@ -95,18 +93,19 @@ impl NativeHost {
         serde_json::from_slice(&buffer).map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))
     }
 
-    fn write_message(&self, message: &OutgoingMessage) -> io::Result<()> {
+    #[expect(
+        clippy::cast_possible_truncation,
+        reason = "Message size is validated to be <= MAX_MESSAGE_SIZE (1MB), well within u32 range"
+    )]
+    fn write_message(message: &OutgoingMessage) -> io::Result<()> {
         let json = serde_json::to_vec(message)?;
 
-        // Chrome limits native messaging to 1MB (1024 * 1024 bytes)
-        const MAX_MESSAGE_SIZE: usize = 1024 * 1024;
         if json.len() > MAX_MESSAGE_SIZE {
             return Err(io::Error::new(
                 io::ErrorKind::InvalidData,
                 format!(
-                    "Outgoing message too large: {} bytes (max: {} bytes)",
-                    json.len(),
-                    MAX_MESSAGE_SIZE
+                    "Outgoing message too large: {} bytes (max: {MAX_MESSAGE_SIZE} bytes)",
+                    json.len()
                 ),
             ));
         }
@@ -136,6 +135,10 @@ impl NativeHost {
         }
     }
 
+    #[expect(
+        clippy::cast_possible_wrap,
+        reason = "Unix timestamps won't exceed i64::MAX until year 292 billion"
+    )]
     fn record_activity(&self, url: &str, title: &str, _timestamp: i64) {
         // Input validation: limit URL and title length to prevent DoS
         const MAX_URL_LEN: usize = 2048;
@@ -204,27 +207,25 @@ impl NativeHost {
 }
 
 /// Extract domain from a URL using proper URL parsing.
-/// This handles edge cases like URLs with userinfo (e.g., https://user@evil.com@legitimate.com).
+/// This handles edge cases like URLs with userinfo (e.g., `<https://user@evil.com@legitimate.com>`).
 fn extract_domain(url_str: &str) -> String {
-    // Use the url crate for proper parsing
-    match Url::parse(url_str) {
-        Ok(url) => url.host_str().unwrap_or("").to_string(),
-        Err(_) => {
-            // For malformed URLs that don't start with a scheme, return empty
-            // This prevents treating random text as a domain
-            if !url_str.starts_with("http://") && !url_str.starts_with("https://") {
-                return String::new();
-            }
-            // Fallback for malformed URLs with scheme: try basic extraction
-            url_str
-                .trim_start_matches("https://")
-                .trim_start_matches("http://")
-                .split('/')
-                .next()
-                .and_then(|s| s.split('@').last()) // Handle userinfo attacks
-                .unwrap_or("")
-                .to_string()
+    if let Ok(url) = Url::parse(url_str) {
+        url.host_str().unwrap_or("").to_string()
+    } else {
+        // For malformed URLs that don't start with a scheme, return empty
+        // This prevents treating random text as a domain
+        if !url_str.starts_with("http://") && !url_str.starts_with("https://") {
+            return String::new();
         }
+        // Fallback for malformed URLs with scheme: try basic extraction
+        url_str
+            .trim_start_matches("https://")
+            .trim_start_matches("http://")
+            .split('/')
+            .next()
+            .and_then(|s| s.split('@').next_back()) // Handle userinfo attacks
+            .unwrap_or("")
+            .to_string()
     }
 }
 

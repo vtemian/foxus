@@ -18,7 +18,7 @@ fn get_db_path() -> Result<std::path::PathBuf, String> {
         .ok_or_else(|| "Could not determine project directories".to_string())?;
     let data_dir = proj_dirs.data_dir();
     std::fs::create_dir_all(data_dir)
-        .map_err(|e| format!("Could not create data directory: {}", e))?;
+        .map_err(|e| format!("Could not create data directory: {e}"))?;
     Ok(data_dir.join("foxus.db"))
 }
 
@@ -38,7 +38,7 @@ fn main() {
     let db_path = match get_db_path() {
         Ok(path) => path,
         Err(e) => {
-            eprintln!("Initialization error: {}", e);
+            eprintln!("Initialization error: {e}");
             std::process::exit(1);
         }
     };
@@ -46,13 +46,13 @@ fn main() {
     let db = match Database::open(&db_path) {
         Ok(db) => db,
         Err(e) => {
-            eprintln!("Failed to open database: {}", e);
+            eprintln!("Failed to open database: {e}");
             std::process::exit(1);
         }
     };
 
     if let Err(e) = migrations::run(db.connection()) {
-        eprintln!("Failed to run migrations: {}", e);
+        eprintln!("Failed to run migrations: {e}");
         std::process::exit(1);
     }
 
@@ -63,7 +63,7 @@ fn main() {
         match Categorizer::new(db_guard.connection()) {
             Ok(cat) => Arc::new(Mutex::new(cat)),
             Err(e) => {
-                eprintln!("Failed to initialize categorizer: {}", e);
+                eprintln!("Failed to initialize categorizer: {e}");
                 std::process::exit(1);
             }
         }
@@ -78,7 +78,7 @@ fn main() {
     if let Err(e) = host.run() {
         // Only report unexpected errors; EOF is expected when Chrome closes the connection
         if e.kind() != std::io::ErrorKind::UnexpectedEof {
-            eprintln!("Native host error: {}", e);
+            eprintln!("Native host error: {e}");
             std::process::exit(1);
         }
     }

@@ -5,7 +5,10 @@ pub struct ActiveWindow {
     pub window_title: String,
     /// macOS bundle identifier (e.g., "com.apple.Safari").
     /// Populated by platform tracker; kept for future rule matching by bundle ID.
-    #[allow(dead_code)]
+    #[expect(
+        dead_code,
+        reason = "Populated by platform tracker; kept for future rule matching by bundle ID"
+    )]
     pub bundle_id: Option<String>,
 }
 

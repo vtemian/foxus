@@ -9,8 +9,6 @@ pub struct Category {
 
 impl Category {
     /// Find a category by its ID.
-    /// Currently used in tests; kept as part of the public API for future use.
-    #[allow(dead_code)]
     pub fn find_by_id(conn: &Connection, id: i64) -> Result<Option<Self>> {
         let mut stmt =
             conn.prepare("SELECT id, name, productivity FROM categories WHERE id = ?1")?;

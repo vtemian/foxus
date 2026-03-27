@@ -40,7 +40,7 @@ mod tests {
         let dir = tempdir().unwrap();
         let db_path = dir.path().join("test.db");
         let db = Database::open(&db_path).unwrap();
-        migrations::run(&db.connection()).unwrap();
+        migrations::run(db.connection()).unwrap();
 
         // Verify tables exist
         let count: i32 = db
@@ -78,7 +78,7 @@ mod tests {
                     |row| row.get(0),
                 )
                 .unwrap();
-            assert_eq!(count, 1, "Table {} should exist", table);
+            assert_eq!(count, 1, "Table {table} should exist");
         }
     }
 

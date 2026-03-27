@@ -51,6 +51,10 @@ impl MacOSTracker {
 }
 
 impl PlatformTracker for MacOSTracker {
+    #[expect(
+        unsafe_code,
+        reason = "Required for macOS NSWorkspace/CoreGraphics FFI"
+    )]
     fn get_active_window(&self) -> Option<ActiveWindow> {
         unsafe {
             let workspace = NSWorkspace::sharedWorkspace();
@@ -58,8 +62,7 @@ impl PlatformTracker for MacOSTracker {
 
             let app_name = app
                 .localizedName()
-                .map(|s| s.to_string())
-                .unwrap_or_else(|| "Unknown".to_string());
+                .map_or_else(|| "Unknown".to_string(), |s| s.to_string());
 
             let bundle_id = app.bundleIdentifier().map(|s| s.to_string());
 
@@ -80,7 +83,13 @@ impl PlatformTracker for MacOSTracker {
     }
 }
 
-/// Get system idle time using CoreGraphics CGEventSource API
+/// Get system idle time using CoreGraphics `CGEventSource` API
+#[expect(unsafe_code, reason = "Required for macOS CoreGraphics FFI")]
+#[expect(
+    clippy::cast_possible_truncation,
+    clippy::cast_sign_loss,
+    reason = "Idle time in seconds is always a small non-negative value, safe to cast to u64"
+)]
 fn get_idle_time_secs_internal() -> u64 {
     // CGEventSourceSecondsSinceLastEventType is not exposed by the core-graphics crate,
     // so we use the raw FFI binding directly.
@@ -102,13 +111,13 @@ fn get_idle_time_secs_internal() -> u64 {
     idle_secs.max(0.0) as u64
 }
 
-/// Get window title using AppleScript with caching.
+/// Get window title using `AppleScript` with caching.
 ///
 /// This spawns a subprocess which takes ~50-100ms, so results are cached
 /// for 1 second to avoid excessive overhead when polling frequently.
 ///
-/// The AppleScript approach works without accessibility permissions but is slow.
-/// A better long-term solution would use the Accessibility API (AXUIElement) which
+/// The `AppleScript` approach works without accessibility permissions but is slow.
+/// A better long-term solution would use the Accessibility API (`AXUIElement`) which
 /// requires adding the accessibility entitlement and requesting user permission.
 fn get_window_title() -> Option<String> {
     // Check cache first
@@ -157,7 +166,7 @@ mod tests {
     use super::*;
 
     #[test]
-    #[ignore] // Requires GUI environment - run manually with: cargo test macos -- --ignored --nocapture
+    #[ignore = "Requires GUI environment - run manually with: cargo test macos -- --ignored --nocapture"]
     fn test_get_active_window() {
         let tracker = MacOSTracker::new();
         // This test may fail in CI but should work locally
@@ -168,12 +177,12 @@ mod tests {
     }
 
     #[test]
-    #[ignore] // Requires GUI environment - run manually with: cargo test macos -- --ignored --nocapture
+    #[ignore = "Requires GUI environment - run manually with: cargo test macos -- --ignored --nocapture"]
     fn test_get_idle_time() {
         let tracker = MacOSTracker::new();
         let idle = tracker.get_idle_time_secs();
         // Should be a reasonable value (less than a day in seconds)
         assert!(idle < 86400);
-        println!("Idle time: {} seconds", idle);
+        println!("Idle time: {idle} seconds");
     }
 }
