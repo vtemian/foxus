@@ -44,3 +44,16 @@ core-graphics = "0.23"
 
 [target.'cfg(target_os = "linux")'.dependencies]
 x11rb = { version = "0.13", features = ["screensaver"] }
+
+[lints.rust]
+unsafe_code = "deny"
+
+[lints.clippy]
+# ── Pedantic baseline (deny, with targeted overrides) ──────────────
+pedantic = { level = "deny", priority = -1 }
+
+# Pedantic overrides: too noisy or not applicable
+module_name_repetitions = "allow"
+must_use_candidate = "allow"
+missing_errors_doc = "allow"
+missing_panics_doc = "allow"

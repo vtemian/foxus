@@ -1,0 +1,34 @@
+# Clippy configuration for Foxus
+# Enforces idiomatic Rust patterns as a strict quality gate.
+
+# Complexity thresholds
+cognitive-complexity-threshold = 30
+too-many-arguments-threshold = 7
+too-many-lines-threshold = 120
+type-complexity-threshold = 250
+
+# Large enum variant size before suggesting Box (bytes)
+enum-variant-size-threshold = 200
+
+# Large error type threshold (bytes)
+large-error-threshold = 128
+
+# Maximum bool params before linting
+max-fn-params-bools = 2
+
+# Disallowed methods - enforce correct alternatives
+disallowed-methods = [
+    { path = "std::env::set_var", reason = "not thread-safe; use structured config instead" },
+    { path = "std::env::remove_var", reason = "not thread-safe; use structured config instead" },
+]
+
+# NOTE: std::sync::Mutex is NOT disallowed because foxus is sync-only (no tokio).
+# If foxus adopts async/tokio later, add:
+# disallowed-types = [
+#     { path = "std::sync::Mutex", reason = "use tokio::sync::Mutex for async code" },
+# ]
+
+# Tests get relaxed rules
+allow-unwrap-in-tests = true
+allow-expect-in-tests = true
+allow-dbg-in-tests = true
