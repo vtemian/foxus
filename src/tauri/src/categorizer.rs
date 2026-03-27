@@ -13,10 +13,8 @@ impl Categorizer {
         let categories = Category::find_all(conn)?;
 
         // Use HashMap for O(1) category lookup instead of O(n) linear search
-        let category_map: HashMap<i64, Category> = categories
-            .iter()
-            .map(|c| (c.id, c.clone()))
-            .collect();
+        let category_map: HashMap<i64, Category> =
+            categories.iter().map(|c| (c.id, c.clone())).collect();
 
         let rules_with_categories: Vec<_> = rules
             .into_iter()
@@ -43,7 +41,9 @@ impl Categorizer {
         for (rule, _category) in &self.rules {
             let matches = match rule.match_type {
                 MatchType::App => Self::pattern_matches(&rule.pattern, app_name),
-                MatchType::Title => window_title.map(|t| Self::pattern_matches(&rule.pattern, t)).unwrap_or(false),
+                MatchType::Title => window_title
+                    .map(|t| Self::pattern_matches(&rule.pattern, t))
+                    .unwrap_or(false),
                 MatchType::Domain => false,
             };
 
@@ -57,7 +57,8 @@ impl Categorizer {
 
     pub fn categorize_url(&self, domain: &str) -> i64 {
         for (rule, _category) in &self.rules {
-            if rule.match_type == MatchType::Domain && Self::pattern_matches(&rule.pattern, domain) {
+            if rule.match_type == MatchType::Domain && Self::pattern_matches(&rule.pattern, domain)
+            {
                 return rule.category_id;
             }
         }
@@ -73,7 +74,9 @@ impl Categorizer {
             let parts: Vec<&str> = pattern_lower.split('*').collect();
             let mut pos = 0;
             for part in parts {
-                if part.is_empty() { continue; }
+                if part.is_empty() {
+                    continue;
+                }
                 if let Some(found) = text_lower[pos..].find(part) {
                     pos += found + part.len();
                 } else {
@@ -95,7 +98,7 @@ impl Categorizer {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::db::{Database, migrations};
+    use crate::db::{migrations, Database};
     use tempfile::{tempdir, TempDir};
 
     fn setup_db() -> (Database, TempDir) {
@@ -113,7 +116,8 @@ mod tests {
 
         let category_id = categorizer.categorize_app("SomeApp", None);
 
-        let uncategorized = Category::find_all(db.connection()).unwrap()
+        let uncategorized = Category::find_all(db.connection())
+            .unwrap()
             .into_iter()
             .find(|c| c.name == "Uncategorized")
             .unwrap();
@@ -126,7 +130,8 @@ mod tests {
         let (db, _dir) = setup_db();
         let conn = db.connection();
 
-        let coding = Category::find_all(conn).unwrap()
+        let coding = Category::find_all(conn)
+            .unwrap()
             .into_iter()
             .find(|c| c.name == "Coding")
             .unwrap();
@@ -144,7 +149,8 @@ mod tests {
         let (db, _dir) = setup_db();
         let conn = db.connection();
 
-        let entertainment = Category::find_all(conn).unwrap()
+        let entertainment = Category::find_all(conn)
+            .unwrap()
             .into_iter()
             .find(|c| c.name == "Entertainment")
             .unwrap();
@@ -162,7 +168,8 @@ mod tests {
         let (db, _dir) = setup_db();
         let conn = db.connection();
 
-        let coding = Category::find_all(conn).unwrap()
+        let coding = Category::find_all(conn)
+            .unwrap()
             .into_iter()
             .find(|c| c.name == "Coding")
             .unwrap();
@@ -193,7 +200,8 @@ mod tests {
         let (db, _dir) = setup_db();
         let conn = db.connection();
 
-        let coding = Category::find_all(conn).unwrap()
+        let coding = Category::find_all(conn)
+            .unwrap()
             .into_iter()
             .find(|c| c.name == "Coding")
             .unwrap();
@@ -207,7 +215,8 @@ mod tests {
         assert_eq!(category_id, coding.id);
 
         // Should not match when title doesn't match
-        let uncategorized = Category::find_all(conn).unwrap()
+        let uncategorized = Category::find_all(conn)
+            .unwrap()
             .into_iter()
             .find(|c| c.name == "Uncategorized")
             .unwrap();
@@ -222,16 +231,21 @@ mod tests {
 
         let mut categorizer = Categorizer::new(conn).unwrap();
 
-        let uncategorized = Category::find_all(conn).unwrap()
+        let uncategorized = Category::find_all(conn)
+            .unwrap()
             .into_iter()
             .find(|c| c.name == "Uncategorized")
             .unwrap();
 
         // "MyNewApp" doesn't match any default rules, should return uncategorized
-        assert_eq!(categorizer.categorize_app("MyNewApp", None), uncategorized.id);
+        assert_eq!(
+            categorizer.categorize_app("MyNewApp", None),
+            uncategorized.id
+        );
 
         // Add a rule for MyNewApp
-        let coding = Category::find_all(conn).unwrap()
+        let coding = Category::find_all(conn)
+            .unwrap()
             .into_iter()
             .find(|c| c.name == "Coding")
             .unwrap();
@@ -249,7 +263,10 @@ mod tests {
 
         let categories = Category::find_all(conn).unwrap();
         let coding = categories.iter().find(|c| c.name == "Coding").unwrap();
-        let entertainment = categories.iter().find(|c| c.name == "Entertainment").unwrap();
+        let entertainment = categories
+            .iter()
+            .find(|c| c.name == "Entertainment")
+            .unwrap();
 
         // Use app names that don't conflict with default rules
         // Lower priority rule matches broadly (any app containing "editor")
@@ -266,6 +283,9 @@ mod tests {
 
         // "Simple Editor" only matches "editor" rule
         let category_id = categorizer.categorize_app("Simple Editor", None);
-        assert_eq!(category_id, entertainment.id, "Should match the only applicable rule");
+        assert_eq!(
+            category_id, entertainment.id,
+            "Should match the only applicable rule"
+        );
     }
 }

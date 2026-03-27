@@ -43,12 +43,14 @@ mod tests {
         migrations::run(&db.connection()).unwrap();
 
         // Verify tables exist
-        let count: i32 = db.connection()
+        let count: i32 = db
+            .connection()
             .query_row(
                 "SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='categories'",
                 [],
-                |row| row.get(0)
-            ).unwrap();
+                |row| row.get(0),
+            )
+            .unwrap();
         assert_eq!(count, 1);
     }
 
@@ -60,14 +62,22 @@ mod tests {
         migrations::run(db.connection()).unwrap();
 
         // Verify all expected tables exist
-        let expected_tables = ["categories", "rules", "activities", "focus_sessions", "focus_schedules"];
+        let expected_tables = [
+            "categories",
+            "rules",
+            "activities",
+            "focus_sessions",
+            "focus_schedules",
+        ];
         for table in &expected_tables {
-            let count: i32 = db.connection()
+            let count: i32 = db
+                .connection()
                 .query_row(
                     "SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name=?1",
                     [table],
-                    |row| row.get(0)
-                ).unwrap();
+                    |row| row.get(0),
+                )
+                .unwrap();
             assert_eq!(count, 1, "Table {} should exist", table);
         }
     }
@@ -80,19 +90,25 @@ mod tests {
         migrations::run(db.connection()).unwrap();
 
         // Verify default categories are seeded
-        let count: i32 = db.connection()
+        let count: i32 = db
+            .connection()
             .query_row("SELECT COUNT(*) FROM categories", [], |row| row.get(0))
             .unwrap();
         assert_eq!(count, 5, "Should have 5 default categories");
 
         // Verify specific categories exist
-        let coding_exists: i32 = db.connection()
+        let coding_exists: i32 = db
+            .connection()
             .query_row(
                 "SELECT COUNT(*) FROM categories WHERE name='Coding' AND productivity=1",
                 [],
-                |row| row.get(0)
-            ).unwrap();
-        assert_eq!(coding_exists, 1, "Coding category should exist with productivity=1");
+                |row| row.get(0),
+            )
+            .unwrap();
+        assert_eq!(
+            coding_exists, 1,
+            "Coding category should exist with productivity=1"
+        );
     }
 
     #[test]
@@ -106,10 +122,14 @@ mod tests {
         migrations::run(db.connection()).unwrap();
 
         // Should still have only 5 categories (not duplicated)
-        let count: i32 = db.connection()
+        let count: i32 = db
+            .connection()
             .query_row("SELECT COUNT(*) FROM categories", [], |row| row.get(0))
             .unwrap();
-        assert_eq!(count, 5, "Running migrations twice should not duplicate categories");
+        assert_eq!(
+            count, 5,
+            "Running migrations twice should not duplicate categories"
+        );
     }
 
     #[test]
@@ -120,21 +140,27 @@ mod tests {
         migrations::run(db.connection()).unwrap();
 
         // Verify default rules are seeded
-        let count: i32 = db.connection()
+        let count: i32 = db
+            .connection()
             .query_row("SELECT COUNT(*) FROM rules", [], |row| row.get(0))
             .unwrap();
         assert!(count > 0, "Should have default rules seeded");
 
         // Verify a specific coding rule exists - e.g., "code" app pattern
-        let code_rule_exists: i32 = db.connection()
+        let code_rule_exists: i32 = db
+            .connection()
             .query_row(
                 "SELECT COUNT(*) FROM rules r
                  JOIN categories c ON r.category_id = c.id
                  WHERE r.pattern = 'code' AND r.match_type = 'app' AND c.name = 'Coding'",
                 [],
-                |row| row.get(0)
-            ).unwrap();
-        assert_eq!(code_rule_exists, 1, "Should have 'code' app rule for Coding category");
+                |row| row.get(0),
+            )
+            .unwrap();
+        assert_eq!(
+            code_rule_exists, 1,
+            "Should have 'code' app rule for Coding category"
+        );
 
         // Verify a domain rule exists - e.g., youtube.com for Entertainment
         let youtube_rule_exists: i32 = db.connection()
@@ -145,13 +171,24 @@ mod tests {
                 [],
                 |row| row.get(0)
             ).unwrap();
-        assert_eq!(youtube_rule_exists, 1, "Should have youtube.com domain rule for Entertainment category");
+        assert_eq!(
+            youtube_rule_exists, 1,
+            "Should have youtube.com domain rule for Entertainment category"
+        );
 
         // Verify all rules have priority 10
-        let non_priority_10_count: i32 = db.connection()
-            .query_row("SELECT COUNT(*) FROM rules WHERE priority != 10", [], |row| row.get(0))
+        let non_priority_10_count: i32 = db
+            .connection()
+            .query_row(
+                "SELECT COUNT(*) FROM rules WHERE priority != 10",
+                [],
+                |row| row.get(0),
+            )
             .unwrap();
-        assert_eq!(non_priority_10_count, 0, "All default rules should have priority 10");
+        assert_eq!(
+            non_priority_10_count, 0,
+            "All default rules should have priority 10"
+        );
     }
 
     #[test]
@@ -162,15 +199,20 @@ mod tests {
 
         // Run migrations twice
         migrations::run(db.connection()).unwrap();
-        let count_after_first: i32 = db.connection()
+        let count_after_first: i32 = db
+            .connection()
             .query_row("SELECT COUNT(*) FROM rules", [], |row| row.get(0))
             .unwrap();
 
         migrations::run(db.connection()).unwrap();
-        let count_after_second: i32 = db.connection()
+        let count_after_second: i32 = db
+            .connection()
             .query_row("SELECT COUNT(*) FROM rules", [], |row| row.get(0))
             .unwrap();
 
-        assert_eq!(count_after_first, count_after_second, "Running migrations twice should not duplicate rules");
+        assert_eq!(
+            count_after_first, count_after_second,
+            "Running migrations twice should not duplicate rules"
+        );
     }
 }

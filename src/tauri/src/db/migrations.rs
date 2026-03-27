@@ -1,5 +1,5 @@
+use super::schema::{DEFAULT_CATEGORIES, SCHEMA};
 use rusqlite::{Connection, Result};
-use super::schema::{SCHEMA, DEFAULT_CATEGORIES};
 
 pub const DEFAULT_RULES: &[(&str, &str, &str)] = &[
     // Coding (productive)
@@ -15,7 +15,6 @@ pub const DEFAULT_RULES: &[(&str, &str, &str)] = &[
     ("gitlab.com", "domain", "Coding"),
     ("stackoverflow.com", "domain", "Reference"),
     ("docs.rs", "domain", "Reference"),
-
     // Communication (neutral)
     ("slack", "app", "Communication"),
     ("discord", "app", "Communication"),
@@ -23,7 +22,6 @@ pub const DEFAULT_RULES: &[(&str, &str, &str)] = &[
     ("outlook", "app", "Communication"),
     ("teams", "app", "Communication"),
     ("zoom", "app", "Communication"),
-
     // Entertainment (distracting)
     ("youtube.com", "domain", "Entertainment"),
     ("netflix.com", "domain", "Entertainment"),
@@ -44,11 +42,7 @@ pub fn run(conn: &Connection) -> Result<()> {
 }
 
 fn seed_default_categories(conn: &Connection) -> Result<()> {
-    let count: i32 = conn.query_row(
-        "SELECT COUNT(*) FROM categories",
-        [],
-        |row| row.get(0)
-    )?;
+    let count: i32 = conn.query_row("SELECT COUNT(*) FROM categories", [], |row| row.get(0))?;
 
     if count == 0 {
         for (name, productivity) in DEFAULT_CATEGORIES {
@@ -62,11 +56,7 @@ fn seed_default_categories(conn: &Connection) -> Result<()> {
 }
 
 fn seed_default_rules(conn: &Connection) -> Result<()> {
-    let count: i32 = conn.query_row(
-        "SELECT COUNT(*) FROM rules",
-        [],
-        |row| row.get(0)
-    )?;
+    let count: i32 = conn.query_row("SELECT COUNT(*) FROM rules", [], |row| row.get(0))?;
 
     if count > 0 {
         return Ok(());

@@ -86,10 +86,7 @@ fn get_idle_time_secs_internal() -> u64 {
     // so we use the raw FFI binding directly.
     #[link(name = "CoreGraphics", kind = "framework")]
     extern "C" {
-        fn CGEventSourceSecondsSinceLastEventType(
-            state_id: u32,
-            event_type: u32,
-        ) -> CGFloat;
+        fn CGEventSourceSecondsSinceLastEventType(state_id: u32, event_type: u32) -> CGFloat;
     }
 
     // kCGEventSourceStateCombinedSessionState = 0
@@ -98,8 +95,9 @@ fn get_idle_time_secs_internal() -> u64 {
     // This captures all input event types (mouse, keyboard, etc.)
     const ANY_INPUT_EVENT_TYPE: u32 = u32::MAX;
 
-    let idle_secs =
-        unsafe { CGEventSourceSecondsSinceLastEventType(COMBINED_SESSION_STATE, ANY_INPUT_EVENT_TYPE) };
+    let idle_secs = unsafe {
+        CGEventSourceSecondsSinceLastEventType(COMBINED_SESSION_STATE, ANY_INPUT_EVENT_TYPE)
+    };
 
     idle_secs.max(0.0) as u64
 }

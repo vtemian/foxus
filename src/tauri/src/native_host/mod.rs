@@ -12,7 +12,11 @@ use url::Url;
 #[serde(tag = "type")]
 pub enum IncomingMessage {
     #[serde(rename = "activity")]
-    Activity { url: String, title: String, timestamp: i64 },
+    Activity {
+        url: String,
+        title: String,
+        timestamp: i64,
+    },
     #[serde(rename = "request_state")]
     RequestState,
     #[serde(rename = "use_distraction_time")]
@@ -49,7 +53,11 @@ impl NativeHost {
         focus_manager: Arc<FocusManager>,
         categorizer: Arc<Mutex<Categorizer>>,
     ) -> Self {
-        Self { db, focus_manager, categorizer }
+        Self {
+            db,
+            focus_manager,
+            categorizer,
+        }
     }
 
     pub fn run(&self) -> io::Result<()> {
@@ -74,15 +82,17 @@ impl NativeHost {
         if len > MAX_MESSAGE_SIZE {
             return Err(io::Error::new(
                 io::ErrorKind::InvalidData,
-                format!("Message too large: {} bytes (max: {} bytes)", len, MAX_MESSAGE_SIZE),
+                format!(
+                    "Message too large: {} bytes (max: {} bytes)",
+                    len, MAX_MESSAGE_SIZE
+                ),
             ));
         }
 
         let mut buffer = vec![0u8; len];
         io::stdin().read_exact(&mut buffer)?;
 
-        serde_json::from_slice(&buffer)
-            .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))
+        serde_json::from_slice(&buffer).map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))
     }
 
     fn write_message(&self, message: &OutgoingMessage) -> io::Result<()> {
@@ -93,7 +103,11 @@ impl NativeHost {
         if json.len() > MAX_MESSAGE_SIZE {
             return Err(io::Error::new(
                 io::ErrorKind::InvalidData,
-                format!("Outgoing message too large: {} bytes (max: {} bytes)", json.len(), MAX_MESSAGE_SIZE),
+                format!(
+                    "Outgoing message too large: {} bytes (max: {} bytes)",
+                    json.len(),
+                    MAX_MESSAGE_SIZE
+                ),
             ));
         }
 
@@ -109,16 +123,16 @@ impl NativeHost {
 
     fn handle_message(&self, message: IncomingMessage) -> Option<OutgoingMessage> {
         match message {
-            IncomingMessage::Activity { url, title, timestamp } => {
+            IncomingMessage::Activity {
+                url,
+                title,
+                timestamp,
+            } => {
                 self.record_activity(&url, &title, timestamp);
                 None
             }
-            IncomingMessage::RequestState => {
-                Some(self.get_state())
-            }
-            IncomingMessage::UseDistractionTime => {
-                self.use_distraction_time()
-            }
+            IncomingMessage::RequestState => Some(self.get_state()),
+            IncomingMessage::UseDistractionTime => self.use_distraction_time(),
         }
     }
 
@@ -220,7 +234,10 @@ mod tests {
 
     #[test]
     fn test_extract_domain() {
-        assert_eq!(extract_domain("https://www.reddit.com/r/rust"), "www.reddit.com");
+        assert_eq!(
+            extract_domain("https://www.reddit.com/r/rust"),
+            "www.reddit.com"
+        );
         assert_eq!(extract_domain("http://github.com"), "github.com");
         assert_eq!(extract_domain("https://docs.rs/tauri/latest"), "docs.rs");
     }
@@ -228,7 +245,10 @@ mod tests {
     #[test]
     fn test_extract_domain_with_userinfo() {
         // This is a potential security attack: URLs with @ can trick naive parsers
-        assert_eq!(extract_domain("https://evil.com@legitimate.com/"), "legitimate.com");
+        assert_eq!(
+            extract_domain("https://evil.com@legitimate.com/"),
+            "legitimate.com"
+        );
     }
 
     #[test]
@@ -241,6 +261,9 @@ mod tests {
     #[test]
     fn test_extract_domain_with_port() {
         assert_eq!(extract_domain("https://localhost:3000/api"), "localhost");
-        assert_eq!(extract_domain("http://example.com:8080/path"), "example.com");
+        assert_eq!(
+            extract_domain("http://example.com:8080/path"),
+            "example.com"
+        );
     }
 }

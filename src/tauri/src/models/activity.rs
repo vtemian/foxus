@@ -1,4 +1,4 @@
-use rusqlite::{Connection, Result, params};
+use rusqlite::{params, Connection, Result};
 
 #[derive(Debug, Clone)]
 pub struct Activity {
@@ -79,17 +79,19 @@ impl Activity {
         rows.collect()
     }
 
-    pub fn total_duration_by_category(conn: &Connection, start: i64, end: i64) -> Result<Vec<(i64, i32)>> {
+    pub fn total_duration_by_category(
+        conn: &Connection,
+        start: i64,
+        end: i64,
+    ) -> Result<Vec<(i64, i32)>> {
         let mut stmt = conn.prepare(
             "SELECT category_id, SUM(duration_secs) as total
              FROM activities
              WHERE timestamp >= ?1 AND timestamp < ?2 AND category_id IS NOT NULL
-             GROUP BY category_id"
+             GROUP BY category_id",
         )?;
 
-        let rows = stmt.query_map(params![start, end], |row| {
-            Ok((row.get(0)?, row.get(1)?))
-        })?;
+        let rows = stmt.query_map(params![start, end], |row| Ok((row.get(0)?, row.get(1)?)))?;
 
         rows.collect()
     }
@@ -98,7 +100,7 @@ impl Activity {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::db::{Database, migrations};
+    use crate::db::{migrations, Database};
     use crate::models::Category;
     use tempfile::{tempdir, TempDir};
 

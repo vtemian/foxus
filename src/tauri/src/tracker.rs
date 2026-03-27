@@ -30,7 +30,11 @@ pub struct TrackerService {
 }
 
 impl TrackerService {
-    pub fn new(db: Arc<Mutex<Database>>, categorizer: Arc<Mutex<Categorizer>>, config: TrackerConfig) -> Self {
+    pub fn new(
+        db: Arc<Mutex<Database>>,
+        categorizer: Arc<Mutex<Categorizer>>,
+        config: TrackerConfig,
+    ) -> Self {
         Self {
             config,
             running: Arc::new(AtomicBool::new(false)),
@@ -61,10 +65,14 @@ impl TrackerService {
                             .as_secs() as i64;
 
                         let category_id = match categorizer.lock() {
-                            Ok(cat) => cat.categorize_app(&window.app_name, Some(&window.window_title)),
+                            Ok(cat) => {
+                                cat.categorize_app(&window.app_name, Some(&window.window_title))
+                            }
                             Err(poisoned) => {
                                 warn!("Categorizer mutex was poisoned, recovering");
-                                poisoned.into_inner().categorize_app(&window.app_name, Some(&window.window_title))
+                                poisoned
+                                    .into_inner()
+                                    .categorize_app(&window.app_name, Some(&window.window_title))
                             }
                         };
 
@@ -124,7 +132,11 @@ mod tests {
 
         let categorizer = Categorizer::new(db.connection()).unwrap();
 
-        (Arc::new(Mutex::new(db)), Arc::new(Mutex::new(categorizer)), dir)
+        (
+            Arc::new(Mutex::new(db)),
+            Arc::new(Mutex::new(categorizer)),
+            dir,
+        )
     }
 
     #[test]
@@ -189,14 +201,13 @@ mod tests {
 
         // 4. Verify activity was saved to the database
         let db_guard = db.lock().unwrap();
-        let activities = Activity::find_in_range(
-            db_guard.connection(),
-            0,
-            i64::MAX,
-        )
-        .unwrap();
+        let activities = Activity::find_in_range(db_guard.connection(), 0, i64::MAX).unwrap();
 
-        assert_eq!(activities.len(), 1, "Expected exactly one activity to be saved");
+        assert_eq!(
+            activities.len(),
+            1,
+            "Expected exactly one activity to be saved"
+        );
 
         let saved = &activities[0];
         assert_eq!(saved.source, "app");

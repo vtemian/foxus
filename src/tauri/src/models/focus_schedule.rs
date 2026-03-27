@@ -1,4 +1,4 @@
-use rusqlite::{Connection, Result, params};
+use rusqlite::{params, Connection, Result};
 
 /// A recurring focus schedule that can auto-start focus sessions.
 #[derive(Debug, Clone)]
@@ -78,7 +78,7 @@ impl FocusSchedule {
     pub fn find_all(conn: &Connection) -> Result<Vec<Self>> {
         let mut stmt = conn.prepare(
             "SELECT id, days_of_week, start_time, end_time, distraction_budget, enabled
-             FROM focus_schedules ORDER BY start_time"
+             FROM focus_schedules ORDER BY start_time",
         )?;
 
         let rows = stmt.query_map([], |row| {
@@ -99,7 +99,7 @@ impl FocusSchedule {
     pub fn find_enabled(conn: &Connection) -> Result<Vec<Self>> {
         let mut stmt = conn.prepare(
             "SELECT id, days_of_week, start_time, end_time, distraction_budget, enabled
-             FROM focus_schedules WHERE enabled = 1 ORDER BY start_time"
+             FROM focus_schedules WHERE enabled = 1 ORDER BY start_time",
         )?;
 
         let rows = stmt.query_map([], |row| {
@@ -120,7 +120,7 @@ impl FocusSchedule {
     pub fn find_by_id(conn: &Connection, id: i64) -> Result<Option<Self>> {
         let mut stmt = conn.prepare(
             "SELECT id, days_of_week, start_time, end_time, distraction_budget, enabled
-             FROM focus_schedules WHERE id = ?1"
+             FROM focus_schedules WHERE id = ?1",
         )?;
 
         let mut rows = stmt.query(params![id])?;
@@ -141,10 +141,8 @@ impl FocusSchedule {
 
     /// Delete a schedule from the database.
     pub fn delete(conn: &Connection, id: i64) -> Result<bool> {
-        let rows_affected = conn.execute(
-            "DELETE FROM focus_schedules WHERE id = ?1",
-            params![id],
-        )?;
+        let rows_affected =
+            conn.execute("DELETE FROM focus_schedules WHERE id = ?1", params![id])?;
         Ok(rows_affected > 0)
     }
 
@@ -178,7 +176,7 @@ impl FocusSchedule {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::db::{Database, migrations};
+    use crate::db::{migrations, Database};
     use tempfile::{tempdir, TempDir};
 
     fn setup_db() -> (Database, TempDir) {

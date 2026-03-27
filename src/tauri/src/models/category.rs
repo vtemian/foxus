@@ -1,4 +1,4 @@
-use rusqlite::{Connection, Result, params};
+use rusqlite::{params, Connection, Result};
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Category {
@@ -12,7 +12,8 @@ impl Category {
     /// Currently used in tests; kept as part of the public API for future use.
     #[allow(dead_code)]
     pub fn find_by_id(conn: &Connection, id: i64) -> Result<Option<Self>> {
-        let mut stmt = conn.prepare("SELECT id, name, productivity FROM categories WHERE id = ?1")?;
+        let mut stmt =
+            conn.prepare("SELECT id, name, productivity FROM categories WHERE id = ?1")?;
         let mut rows = stmt.query(params![id])?;
 
         if let Some(row) = rows.next()? {
@@ -27,7 +28,8 @@ impl Category {
     }
 
     pub fn find_all(conn: &Connection) -> Result<Vec<Self>> {
-        let mut stmt = conn.prepare("SELECT id, name, productivity FROM categories ORDER BY name")?;
+        let mut stmt =
+            conn.prepare("SELECT id, name, productivity FROM categories ORDER BY name")?;
         let rows = stmt.query_map([], |row| {
             Ok(Self {
                 id: row.get(0)?,
@@ -46,7 +48,11 @@ impl Category {
             params![name, productivity],
         )?;
         let id = conn.last_insert_rowid();
-        Ok(Self { id, name: name.to_string(), productivity })
+        Ok(Self {
+            id,
+            name: name.to_string(),
+            productivity,
+        })
     }
 
     /// Update an existing category.
@@ -62,10 +68,7 @@ impl Category {
     /// Returns true if a category was deleted, false if not found.
     /// Note: This will fail if there are rules or activities referencing this category.
     pub fn delete(conn: &Connection, id: i64) -> Result<bool> {
-        let rows_affected = conn.execute(
-            "DELETE FROM categories WHERE id = ?1",
-            params![id],
-        )?;
+        let rows_affected = conn.execute("DELETE FROM categories WHERE id = ?1", params![id])?;
         Ok(rows_affected > 0)
     }
 }
@@ -73,7 +76,7 @@ impl Category {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::db::{Database, migrations};
+    use crate::db::{migrations, Database};
     use tempfile::{tempdir, TempDir};
 
     fn setup_db() -> (Database, TempDir) {

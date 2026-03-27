@@ -101,7 +101,10 @@ impl FocusManager {
     pub fn use_distraction_time(&self, secs: i32) -> rusqlite::Result<Option<i32>> {
         // Rate limiting: Check if enough time has passed since last request
         {
-            let mut last_request = self.last_distraction_request.lock().unwrap_or_else(|p| p.into_inner());
+            let mut last_request = self
+                .last_distraction_request
+                .lock()
+                .unwrap_or_else(|p| p.into_inner());
             let now = Instant::now();
 
             if let Some(last) = *last_request {
@@ -137,15 +140,19 @@ impl FocusManager {
             return Ok(false);
         }
 
-        Ok(state.blocked_domains.iter().any(|d| {
-            domain.ends_with(d) || domain == d.trim_start_matches("*.")
-        }))
+        Ok(state
+            .blocked_domains
+            .iter()
+            .any(|d| domain.ends_with(d) || domain == d.trim_start_matches("*.")))
     }
 
     /// Reset rate limiting state. Used in tests to allow rapid calls.
     #[cfg(test)]
     pub fn reset_rate_limit(&self) {
-        let mut last_request = self.last_distraction_request.lock().unwrap_or_else(|p| p.into_inner());
+        let mut last_request = self
+            .last_distraction_request
+            .lock()
+            .unwrap_or_else(|p| p.into_inner());
         *last_request = None;
     }
 
@@ -154,7 +161,7 @@ impl FocusManager {
         let mut stmt = conn.prepare(
             "SELECT r.pattern FROM rules r
              JOIN categories c ON r.category_id = c.id
-             WHERE r.match_type = 'domain' AND c.productivity < 0"
+             WHERE r.match_type = 'domain' AND c.productivity < 0",
         )?;
 
         let rows = stmt.query_map([], |row| row.get(0))?;
@@ -198,9 +205,7 @@ impl FocusManager {
             (Some(schedule), Some(session)) if session.scheduled => {
                 // Only end and restart if budget changed significantly (prevents churn)
                 if (schedule.distraction_budget - session.distraction_budget).abs() > 60 {
-                    info!(
-                        "Schedule budget changed significantly, restarting session"
-                    );
+                    info!("Schedule budget changed significantly, restarting session");
                     let mut session = session;
                     session.end(conn)?;
                     let mut new_session = FocusSession::new(schedule.distraction_budget, true);
@@ -234,14 +239,15 @@ impl FocusManager {
     ) -> rusqlite::Result<Option<FocusSchedule>> {
         let schedules = FocusSchedule::find_enabled(conn)?;
 
-        Ok(schedules
-            .into_iter()
-            .find(|s| s.is_active_at(day, time)))
+        Ok(schedules.into_iter().find(|s| s.is_active_at(day, time)))
     }
 
     /// Start a scheduled focus session with the given budget.
     /// Unlike start_session, this marks the session as scheduled.
-    pub fn start_scheduled_session(&self, distraction_budget_secs: i32) -> rusqlite::Result<FocusSession> {
+    pub fn start_scheduled_session(
+        &self,
+        distraction_budget_secs: i32,
+    ) -> rusqlite::Result<FocusSession> {
         let db = self.lock_db();
         let conn = db.connection();
 
@@ -280,7 +286,7 @@ fn get_current_day_and_time() -> (u32, String) {
 mod tests {
     use super::*;
     use crate::db::migrations;
-    use crate::models::{Category, FocusSchedule, Rule, MatchType};
+    use crate::models::{Category, FocusSchedule, MatchType, Rule};
     use tempfile::{tempdir, TempDir};
 
     fn setup() -> (Arc<Mutex<Database>>, TempDir) {
@@ -337,7 +343,8 @@ mod tests {
         {
             let db_lock = db.lock().unwrap();
             let conn = db_lock.connection();
-            let entertainment = Category::find_all(conn).unwrap()
+            let entertainment = Category::find_all(conn)
+                .unwrap()
                 .into_iter()
                 .find(|c| c.name == "Entertainment")
                 .unwrap();
@@ -382,7 +389,10 @@ mod tests {
         // Duration should be very small (close to 0) since we just started
         let duration = state.session_duration_secs.unwrap();
         assert!(duration >= 0, "Duration should be non-negative");
-        assert!(duration < 5, "Duration should be small for a just-started session");
+        assert!(
+            duration < 5,
+            "Duration should be small for a just-started session"
+        );
     }
 
     #[test]
@@ -419,10 +429,19 @@ mod tests {
         let (day, time) = get_current_day_and_time();
 
         // Day should be 1-7
-        assert!(day >= 1 && day <= 7, "Day should be between 1 and 7, got {}", day);
+        assert!(
+            day >= 1 && day <= 7,
+            "Day should be between 1 and 7, got {}",
+            day
+        );
 
         // Time should be HH:MM format
-        assert_eq!(time.len(), 5, "Time should be 5 characters (HH:MM), got {}", time);
+        assert_eq!(
+            time.len(),
+            5,
+            "Time should be 5 characters (HH:MM), got {}",
+            time
+        );
         assert_eq!(&time[2..3], ":", "Time should have colon at position 2");
 
         let hours: u32 = time[0..2].parse().unwrap();

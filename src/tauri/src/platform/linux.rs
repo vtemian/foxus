@@ -26,7 +26,10 @@ impl LinuxTracker {
                         screen_num,
                         setup.roots.len()
                     );
-                    return Self { conn: None, root: 0 };
+                    return Self {
+                        conn: None,
+                        root: 0,
+                    };
                 }
                 let screen = &setup.roots[screen_num];
                 let root = screen.root;
@@ -42,13 +45,17 @@ impl LinuxTracker {
                     "Warning: Failed to connect to X server: {}. Window tracking disabled.",
                     e
                 );
-                Self { conn: None, root: 0 }
+                Self {
+                    conn: None,
+                    root: 0,
+                }
             }
         }
     }
 
     fn get_atom(&self, name: &str) -> Option<u32> {
-        self.conn.as_ref()?
+        self.conn
+            .as_ref()?
             .intern_atom(false, name.as_bytes())
             .ok()?
             .reply()
@@ -57,7 +64,9 @@ impl LinuxTracker {
     }
 
     fn get_window_property(&self, window: Window, atom: u32) -> Option<String> {
-        let reply = self.conn.as_ref()?
+        let reply = self
+            .conn
+            .as_ref()?
             .get_property(false, window, atom, AtomEnum::ANY, 0, 1024)
             .ok()?
             .reply()

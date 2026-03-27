@@ -10,9 +10,15 @@ use tauri::State;
 use super::RuleResponse;
 
 /// Reload categorizer cache after rule mutations.
-fn reload_categorizer(categorizer: &Arc<Mutex<Categorizer>>, conn: &Connection) -> Result<(), String> {
-    let mut cat = categorizer.lock().map_err(|_| AppError::LockPoisoned.to_string())?;
-    cat.reload(conn).map_err(|e| AppError::from(e).to_string())?;
+fn reload_categorizer(
+    categorizer: &Arc<Mutex<Categorizer>>,
+    conn: &Connection,
+) -> Result<(), String> {
+    let mut cat = categorizer
+        .lock()
+        .map_err(|_| AppError::LockPoisoned.to_string())?;
+    cat.reload(conn)
+        .map_err(|e| AppError::from(e).to_string())?;
     Ok(())
 }
 

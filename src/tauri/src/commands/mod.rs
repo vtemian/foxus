@@ -2,8 +2,8 @@
 //
 // Commands module - provides Tauri IPC command handlers organized by feature.
 
-mod dtos;
 pub mod categories;
+mod dtos;
 pub mod focus;
 pub mod rules;
 pub mod stats;

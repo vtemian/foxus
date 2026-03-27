@@ -1,4 +1,4 @@
-use rusqlite::{Connection, Result, params};
+use rusqlite::{params, Connection, Result};
 use std::time::{SystemTime, UNIX_EPOCH};
 
 #[derive(Debug, Clone)]
@@ -49,7 +49,7 @@ impl FocusSession {
     pub fn find_active(conn: &Connection) -> Result<Option<Self>> {
         let mut stmt = conn.prepare(
             "SELECT id, started_at, ended_at, scheduled, distraction_budget, distraction_used
-             FROM focus_sessions WHERE ended_at IS NULL ORDER BY started_at DESC LIMIT 1"
+             FROM focus_sessions WHERE ended_at IS NULL ORDER BY started_at DESC LIMIT 1",
         )?;
 
         let mut rows = stmt.query([])?;
@@ -72,7 +72,9 @@ impl FocusSession {
     /// Returns an error if the session has not been saved yet (id is None).
     pub fn end(&mut self, conn: &Connection) -> Result<()> {
         let id = self.id.ok_or_else(|| {
-            rusqlite::Error::InvalidParameterName("Cannot end unsaved session - call save() first".to_string())
+            rusqlite::Error::InvalidParameterName(
+                "Cannot end unsaved session - call save() first".to_string(),
+            )
         })?;
 
         let now = current_timestamp();
@@ -90,7 +92,9 @@ impl FocusSession {
     /// Returns an error if the session has not been saved yet (id is None).
     pub fn add_distraction_time(&mut self, conn: &Connection, secs: i32) -> Result<()> {
         let id = self.id.ok_or_else(|| {
-            rusqlite::Error::InvalidParameterName("Cannot update unsaved session - call save() first".to_string())
+            rusqlite::Error::InvalidParameterName(
+                "Cannot update unsaved session - call save() first".to_string(),
+            )
         })?;
 
         self.distraction_used += secs;
@@ -115,7 +119,7 @@ impl FocusSession {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::db::{Database, migrations};
+    use crate::db::{migrations, Database};
     use tempfile::{tempdir, TempDir};
 
     fn setup_db() -> (Database, TempDir) {
@@ -228,11 +232,13 @@ mod tests {
         session.end(conn).unwrap();
 
         // Verify the ended_at was persisted by querying directly
-        let ended_at: Option<i64> = conn.query_row(
-            "SELECT ended_at FROM focus_sessions WHERE id = ?1",
-            params![session_id],
-            |row| row.get(0)
-        ).unwrap();
+        let ended_at: Option<i64> = conn
+            .query_row(
+                "SELECT ended_at FROM focus_sessions WHERE id = ?1",
+                params![session_id],
+                |row| row.get(0),
+            )
+            .unwrap();
 
         assert!(ended_at.is_some());
         assert_eq!(ended_at, session.ended_at);
@@ -267,11 +273,13 @@ mod tests {
         session.add_distraction_time(conn, 75).unwrap();
 
         // Verify persisted to DB
-        let used: i32 = conn.query_row(
-            "SELECT distraction_used FROM focus_sessions WHERE id = ?1",
-            params![session_id],
-            |row| row.get(0)
-        ).unwrap();
+        let used: i32 = conn
+            .query_row(
+                "SELECT distraction_used FROM focus_sessions WHERE id = ?1",
+                params![session_id],
+                |row| row.get(0),
+            )
+            .unwrap();
 
         assert_eq!(used, 75);
     }
@@ -374,6 +382,9 @@ mod tests {
         // Don't save - session.id is None
 
         let result = session.add_distraction_time(conn, 50);
-        assert!(result.is_err(), "add_distraction_time() should fail on unsaved session");
+        assert!(
+            result.is_err(),
+            "add_distraction_time() should fail on unsaved session"
+        );
     }
 }

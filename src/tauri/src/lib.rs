@@ -3,7 +3,6 @@ mod commands;
 pub mod constants;
 pub mod db;
 pub mod error;
-pub mod validation;
 pub mod focus;
 mod models;
 pub mod native_host;
@@ -11,6 +10,7 @@ mod platform;
 #[cfg(test)]
 mod test_utils;
 mod tracker;
+pub mod validation;
 
 use crate::categorizer::Categorizer;
 use crate::db::{migrations, Database};
@@ -45,15 +45,27 @@ fn build_tray_menu(app: &AppHandle) -> Result<Menu<Wry>, Box<dyn std::error::Err
     let separator = PredefinedMenuItem::separator(app)?;
 
     if focus_active {
-        let end_focus = MenuItem::with_id(app, "end_focus", "End Focus Session", true, None::<&str>)?;
+        let end_focus =
+            MenuItem::with_id(app, "end_focus", "End Focus Session", true, None::<&str>)?;
         let quit = MenuItem::with_id(app, "quit", "Quit Foxus", true, None::<&str>)?;
-        Ok(Menu::with_items(app, &[&open, &separator, &end_focus, &separator, &quit])?)
+        Ok(Menu::with_items(
+            app,
+            &[&open, &separator, &end_focus, &separator, &quit],
+        )?)
     } else {
-        let focus_10 = MenuItem::with_id(app, "focus_10", "Start Focus (10 min)", true, None::<&str>)?;
-        let focus_25 = MenuItem::with_id(app, "focus_25", "Start Focus (25 min)", true, None::<&str>)?;
-        let focus_60 = MenuItem::with_id(app, "focus_60", "Start Focus (1 hour)", true, None::<&str>)?;
+        let focus_10 =
+            MenuItem::with_id(app, "focus_10", "Start Focus (10 min)", true, None::<&str>)?;
+        let focus_25 =
+            MenuItem::with_id(app, "focus_25", "Start Focus (25 min)", true, None::<&str>)?;
+        let focus_60 =
+            MenuItem::with_id(app, "focus_60", "Start Focus (1 hour)", true, None::<&str>)?;
         let quit = MenuItem::with_id(app, "quit", "Quit Foxus", true, None::<&str>)?;
-        Ok(Menu::with_items(app, &[&open, &separator, &focus_10, &focus_25, &focus_60, &separator, &quit])?)
+        Ok(Menu::with_items(
+            app,
+            &[
+                &open, &separator, &focus_10, &focus_25, &focus_60, &separator, &quit,
+            ],
+        )?)
     }
 }
 
@@ -82,8 +94,7 @@ impl std::fmt::Display for InitError {
 impl std::error::Error for InitError {}
 
 fn get_db_path() -> Result<std::path::PathBuf, InitError> {
-    let proj_dirs = ProjectDirs::from("com", "foxus", "Foxus")
-        .ok_or(InitError::NoProjectDirs)?;
+    let proj_dirs = ProjectDirs::from("com", "foxus", "Foxus").ok_or(InitError::NoProjectDirs)?;
     let data_dir = proj_dirs.data_dir();
     std::fs::create_dir_all(data_dir).map_err(InitError::DataDirCreation)?;
     Ok(data_dir.join("foxus.db"))
@@ -134,7 +145,9 @@ pub fn run() {
                     Ok(cat) => Arc::new(Mutex::new(cat)),
                     Err(e) => {
                         error!("Failed to initialize categorizer: {}", e);
-                        return Err(Box::new(InitError::Categorizer(e)) as Box<dyn std::error::Error>);
+                        return Err(
+                            Box::new(InitError::Categorizer(e)) as Box<dyn std::error::Error>
+                        );
                     }
                 }
             };
@@ -170,11 +183,19 @@ pub fn run() {
             // Setup tray with initial menu
             let open = MenuItem::with_id(app, "open", "Open Foxus", true, None::<&str>)?;
             let separator = PredefinedMenuItem::separator(app)?;
-            let focus_10 = MenuItem::with_id(app, "focus_10", "Start Focus (10 min)", true, None::<&str>)?;
-            let focus_25 = MenuItem::with_id(app, "focus_25", "Start Focus (25 min)", true, None::<&str>)?;
-            let focus_60 = MenuItem::with_id(app, "focus_60", "Start Focus (1 hour)", true, None::<&str>)?;
+            let focus_10 =
+                MenuItem::with_id(app, "focus_10", "Start Focus (10 min)", true, None::<&str>)?;
+            let focus_25 =
+                MenuItem::with_id(app, "focus_25", "Start Focus (25 min)", true, None::<&str>)?;
+            let focus_60 =
+                MenuItem::with_id(app, "focus_60", "Start Focus (1 hour)", true, None::<&str>)?;
             let quit = MenuItem::with_id(app, "quit", "Quit Foxus", true, None::<&str>)?;
-            let menu = Menu::with_items(app, &[&open, &separator, &focus_10, &focus_25, &focus_60, &separator, &quit])?;
+            let menu = Menu::with_items(
+                app,
+                &[
+                    &open, &separator, &focus_10, &focus_25, &focus_60, &separator, &quit,
+                ],
+            )?;
 
             let tray = TrayIconBuilder::new()
                 .icon(app.default_window_icon().unwrap().clone())
