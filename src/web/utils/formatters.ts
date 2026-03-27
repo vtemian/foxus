@@ -1,10 +1,13 @@
+const SECONDS_PER_HOUR = 3600;
+const SECONDS_PER_MINUTE = 60;
+
 /**
  * Format seconds as "Xh Ym" for display in stats.
  * @example formatTime(3665) // "1h 1m"
  */
-export const formatTime = (secs: number): string => {
-  const hours = Math.floor(secs / 3600);
-  const mins = Math.floor((secs % 3600) / 60);
+const formatTime = (secs: number): string => {
+  const hours = Math.floor(secs / SECONDS_PER_HOUR);
+  const mins = Math.floor((secs % SECONDS_PER_HOUR) / SECONDS_PER_MINUTE);
   return `${hours}h ${mins}m`;
 };
 
@@ -12,9 +15,9 @@ export const formatTime = (secs: number): string => {
  * Format seconds as "M:SS" for focus budget countdown.
  * @example formatBudget(125) // "2:05"
  */
-export const formatBudget = (secs: number): string => {
-  const mins = Math.floor(secs / 60);
-  const s = secs % 60;
+const formatBudget = (secs: number): string => {
+  const mins = Math.floor(secs / SECONDS_PER_MINUTE);
+  const s = secs % SECONDS_PER_MINUTE;
   return `${mins}:${s.toString().padStart(2, "0")}`;
 };
 
@@ -22,8 +25,10 @@ export const formatBudget = (secs: number): string => {
  * Escape HTML special characters for safe DOM insertion.
  * @example escapeHtml("<script>") // "&lt;script&gt;"
  */
-export const escapeHtml = (text: string): string => {
+const escapeHtml = (text: string): string => {
   const div = document.createElement("div");
   div.textContent = text;
   return div.innerHTML;
 };
+
+export { escapeHtml, formatBudget, formatTime };

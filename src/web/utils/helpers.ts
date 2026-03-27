@@ -9,6 +9,8 @@ import { twMerge } from "tailwind-merge";
  * @example
  * cn("px-4 py-2", condition && "bg-red-500", className)
  */
-export const cn = (...inputs: ClassValue[]): string => {
+const cn = (...inputs: ClassValue[]): string => {
   return twMerge(clsx(inputs));
 };
+
+export { cn };

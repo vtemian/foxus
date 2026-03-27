@@ -1,5 +1,4 @@
 import { cva, type VariantProps } from "class-variance-authority";
-import type * as React from "react";
 import { cn } from "@/utils/helpers";
 
 const typographyVariants = cva(["font-mono"], {
@@ -29,7 +28,7 @@ const typographyVariants = cva(["font-mono"], {
   },
 });
 
-type VariantElementMap = {
+interface VariantElementMap {
   h1: "h1";
   h2: "h2";
   h3: "h3";
@@ -37,11 +36,11 @@ type VariantElementMap = {
   label: "span";
   time: "span";
   budget: "span";
-};
+}
 
 type Variant = keyof VariantElementMap;
 
-const defaultElements: VariantElementMap = {
+const DEFAULT_ELEMENTS: VariantElementMap = {
   h1: "h1",
   h2: "h2",
   h3: "h3",
@@ -51,20 +50,20 @@ const defaultElements: VariantElementMap = {
   budget: "span",
 };
 
-export type TypographyProps<T extends React.ElementType = "span"> = {
+type TypographyProps<T extends React.ElementType = "span"> = {
   as?: T;
   variant?: Variant;
 } & Omit<React.ComponentPropsWithoutRef<T>, "as"> &
   VariantProps<typeof typographyVariants>;
 
-export const Typography = <T extends React.ElementType = "span">({
+const Typography = <T extends React.ElementType = "span">({
   as,
   variant = "body",
   color = "default",
   className,
   ...props
 }: TypographyProps<T>) => {
-  const Component = as || defaultElements[variant] || "span";
+  const Component = as ?? DEFAULT_ELEMENTS[variant] ?? "span";
 
   return (
     <Component
@@ -76,4 +75,5 @@ export const Typography = <T extends React.ElementType = "span">({
   );
 };
 
-export { typographyVariants };
+export type { TypographyProps };
+export { Typography, typographyVariants };

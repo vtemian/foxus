@@ -1,13 +1,25 @@
 import { Typography } from "@/components/ui";
 
-export type HeaderProps = {
-  period: "today" | "week";
-  onPeriodChange: (period: "today" | "week") => void;
+type Period = "today" | "week";
+
+interface HeaderProps {
+  period: Period;
+  onPeriodChange: (period: Period) => void;
   onSettingsClick: () => void;
   showSettings: boolean;
+}
+
+const handlePeriodChange = (
+  e: React.ChangeEvent<HTMLSelectElement>,
+  onPeriodChange: (period: Period) => void,
+) => {
+  const value = e.target.value;
+  if (value === "today" || value === "week") {
+    onPeriodChange(value);
+  }
 };
 
-export const Header = ({ period, onPeriodChange, onSettingsClick, showSettings }: HeaderProps) => {
+const Header = ({ period, onPeriodChange, onSettingsClick, showSettings }: HeaderProps) => {
   return (
     <header className="flex items-center justify-between mb-4 pb-3 border-b border-gray-250">
       <Typography as="h1" variant="h1">
@@ -22,7 +34,7 @@ export const Header = ({ period, onPeriodChange, onSettingsClick, showSettings }
             <select
               id="period-select"
               value={period}
-              onChange={(e) => onPeriodChange(e.target.value as "today" | "week")}
+              onChange={(e) => handlePeriodChange(e, onPeriodChange)}
               className="font-mono text-xs bg-gray-150 border border-gray-250 px-2 py-1 uppercase tracking-wide text-gray-600 cursor-pointer hover:border-gray-300 focus:outline-none focus:border-accent-50"
             >
               <option value="today">Today</option>
@@ -43,3 +55,6 @@ export const Header = ({ period, onPeriodChange, onSettingsClick, showSettings }
     </header>
   );
 };
+
+export type { HeaderProps };
+export { Header };

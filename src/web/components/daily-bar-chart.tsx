@@ -2,9 +2,9 @@ import { Bar, BarChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recha
 import type { DailyStats } from "@/types/api";
 import { formatTime } from "@/utils/formatters";
 
-export type DailyBarChartProps = {
+interface DailyBarChartProps {
   dailyStats: DailyStats[];
-};
+}
 
 const COLORS = {
   productive: "#22c55e",
@@ -18,29 +18,37 @@ const AXIS_STYLE = {
   fontFamily: "monospace",
 };
 
+const MS_PER_SECOND = 1000;
+const SECONDS_PER_HOUR = 3600;
+const TOP_BAR_RADIUS = 4;
+const CHART_HEIGHT = 180;
+const CHART_LEFT_MARGIN = -20;
+const CHART_TOP_MARGIN = 10;
+const CHART_RIGHT_MARGIN = 10;
+
 const formatDayLabel = (timestamp: number): string => {
-  const date = new Date(timestamp * 1000);
+  const date = new Date(timestamp * MS_PER_SECOND);
   return date.toLocaleDateString("en-US", { weekday: "short" });
 };
 
-type ChartDataItem = {
+interface ChartDataItem {
   day: string;
   productive: number;
   neutral: number;
   distracting: number;
-};
+}
 
-type TooltipPayloadItem = {
+interface TooltipPayloadItem {
   value?: number;
   name?: string;
   color?: string;
-};
+}
 
-type CustomTooltipProps = {
+interface CustomTooltipProps {
   active?: boolean;
   payload?: TooltipPayloadItem[];
   label?: string;
-};
+}
 
 const CustomTooltip = ({ active, payload, label }: CustomTooltipProps) => {
   if (!active || !payload || payload.length === 0) {
@@ -51,7 +59,7 @@ const CustomTooltip = ({ active, payload, label }: CustomTooltipProps) => {
     <div className="bg-gray-200 border border-gray-250 p-2 text-xs">
       <p className="font-mono text-gray-400 mb-1">{label}</p>
       {payload.map((entry, index) => (
-        <p key={index} style={{ color: entry.color }}>
+        <p key={String(index)} style={{ color: entry.color }}>
           {entry.name}: {formatTime(entry.value ?? 0)}
         </p>
       ))}
@@ -59,61 +67,59 @@ const CustomTooltip = ({ active, payload, label }: CustomTooltipProps) => {
   );
 };
 
-export const DailyBarChart = ({ dailyStats }: DailyBarChartProps) => {
-  if (!dailyStats || dailyStats.length === 0) {
-    return null;
-  }
+const formatYAxisTick = (value: number): string => {
+  const hours = Math.floor(value / SECONDS_PER_HOUR);
+  return hours > 0 ? `${String(hours)}h` : "";
+};
 
-  const data: ChartDataItem[] = dailyStats.map((day) => ({
+const buildChartData = (dailyStats: DailyStats[]): ChartDataItem[] =>
+  dailyStats.map((day) => ({
     day: formatDayLabel(day.date),
     productive: day.productive_secs,
     neutral: day.neutral_secs,
     distracting: day.distracting_secs,
   }));
 
+const ChartContent = ({ data }: { data: ChartDataItem[] }) => (
+  <ResponsiveContainer width="100%" height="100%">
+    <BarChart
+      data={data}
+      margin={{
+        top: CHART_TOP_MARGIN,
+        right: CHART_RIGHT_MARGIN,
+        left: CHART_LEFT_MARGIN,
+        bottom: 0,
+      }}
+    >
+      <XAxis dataKey="day" tick={AXIS_STYLE} axisLine={{ stroke: "#374151" }} tickLine={false} />
+      <YAxis tick={AXIS_STYLE} axisLine={false} tickLine={false} tickFormatter={formatYAxisTick} />
+      <Tooltip content={<CustomTooltip />} cursor={{ fill: "#1f2937" }} />
+      <Bar dataKey="productive" stackId="a" fill={COLORS.productive} name="Productive" />
+      <Bar dataKey="neutral" stackId="a" fill={COLORS.neutral} name="Neutral" />
+      <Bar
+        dataKey="distracting"
+        stackId="a"
+        fill={COLORS.distracting}
+        name="Distracting"
+        radius={[TOP_BAR_RADIUS, TOP_BAR_RADIUS, 0, 0]}
+      />
+    </BarChart>
+  </ResponsiveContainer>
+);
+
+const DailyBarChart = ({ dailyStats }: DailyBarChartProps) => {
+  if (!dailyStats || dailyStats.length === 0) {
+    return null;
+  }
+
+  const data = buildChartData(dailyStats);
+
   return (
-    <div className="w-full h-[180px]">
-      <ResponsiveContainer width="100%" height="100%">
-        <BarChart data={data} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-          <XAxis
-            dataKey="day"
-            tick={AXIS_STYLE}
-            axisLine={{ stroke: "#374151" }}
-            tickLine={false}
-          />
-          <YAxis
-            tick={AXIS_STYLE}
-            axisLine={false}
-            tickLine={false}
-            tickFormatter={(value) => {
-              const hours = Math.floor(value / 3600);
-              return hours > 0 ? `${hours}h` : "";
-            }}
-          />
-          <Tooltip content={<CustomTooltip />} cursor={{ fill: "#1f2937" }} />
-          <Bar
-            dataKey="productive"
-            stackId="a"
-            fill={COLORS.productive}
-            name="Productive"
-            radius={[0, 0, 0, 0]}
-          />
-          <Bar
-            dataKey="neutral"
-            stackId="a"
-            fill={COLORS.neutral}
-            name="Neutral"
-            radius={[0, 0, 0, 0]}
-          />
-          <Bar
-            dataKey="distracting"
-            stackId="a"
-            fill={COLORS.distracting}
-            name="Distracting"
-            radius={[4, 4, 0, 0]}
-          />
-        </BarChart>
-      </ResponsiveContainer>
+    <div className="w-full" style={{ height: `${String(CHART_HEIGHT)}px` }}>
+      <ChartContent data={data} />
     </div>
   );
 };
+
+export type { DailyBarChartProps };
+export { DailyBarChart };

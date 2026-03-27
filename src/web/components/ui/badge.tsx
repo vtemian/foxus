@@ -1,5 +1,4 @@
 import { cva, type VariantProps } from "class-variance-authority";
-import type * as React from "react";
 import { cn } from "@/utils/helpers";
 
 const badgeVariants = cva(["inline-block rounded-none"], {
@@ -21,15 +20,10 @@ const badgeVariants = cva(["inline-block rounded-none"], {
   },
 });
 
-export type BadgeProps = Omit<React.ComponentProps<"span">, "children"> &
+type BadgeProps = Omit<React.ComponentProps<"span">, "children"> &
   VariantProps<typeof badgeVariants>;
 
-export const Badge = ({
-  variant = "productive",
-  size = "dot",
-  className,
-  ...props
-}: BadgeProps) => {
+const Badge = ({ variant = "productive", size = "dot", className, ...props }: BadgeProps) => {
   return (
     <span
       data-slot="badge"
@@ -41,4 +35,5 @@ export const Badge = ({
   );
 };
 
-export { badgeVariants };
+export type { BadgeProps };
+export { Badge, badgeVariants };

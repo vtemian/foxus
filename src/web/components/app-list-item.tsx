@@ -1,12 +1,13 @@
 import { Badge, Typography } from "@/components/ui";
-import { type AppActivity, productivityToVariant } from "@/types/api";
+import type { AppActivity } from "@/types/api";
+import { productivityToVariant } from "@/types/api";
 import { formatTime } from "@/utils/formatters";
 
-export type AppListItemProps = {
+interface AppListItemProps {
   app: AppActivity;
-};
+}
 
-export const AppListItem = ({ app }: AppListItemProps) => {
+const AppListItem = ({ app }: AppListItemProps) => {
   const variant = productivityToVariant(app.productivity);
 
   return (
@@ -21,3 +22,6 @@ export const AppListItem = ({ app }: AppListItemProps) => {
     </li>
   );
 };
+
+export type { AppListItemProps };
+export { AppListItem };

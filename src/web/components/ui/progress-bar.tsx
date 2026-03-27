@@ -1,5 +1,4 @@
 import { cva, type VariantProps } from "class-variance-authority";
-import type * as React from "react";
 import { cn } from "@/utils/helpers";
 
 const progressBarVariants = cva(["h-1 transition-all duration-300 ease-out"], {
@@ -15,20 +14,22 @@ const progressBarVariants = cva(["h-1 transition-all duration-300 ease-out"], {
   },
 });
 
-export type ProgressBarProps = {
+const PERCENTAGE_MAX = 100;
+
+type ProgressBarProps = {
   value: number;
   max: number;
 } & Omit<React.ComponentProps<"div">, "children"> &
   VariantProps<typeof progressBarVariants>;
 
-export const ProgressBar = ({
+const ProgressBar = ({
   value,
   max,
   variant = "productive",
   className,
   ...props
 }: ProgressBarProps) => {
-  const percentage = max > 0 ? Math.min((value / max) * 100, 100) : 0;
+  const percentage = max > 0 ? Math.min((value / max) * PERCENTAGE_MAX, PERCENTAGE_MAX) : 0;
 
   return (
     <div
@@ -41,9 +42,13 @@ export const ProgressBar = ({
       className={cn("h-1 flex-1 bg-gray-250 overflow-hidden", className)}
       {...props}
     >
-      <div className={cn(progressBarVariants({ variant }))} style={{ width: `${percentage}%` }} />
+      <div
+        className={cn(progressBarVariants({ variant }))}
+        style={{ width: `${String(percentage)}%` }}
+      />
     </div>
   );
 };
 
-export { progressBarVariants };
+export type { ProgressBarProps };
+export { ProgressBar, progressBarVariants };

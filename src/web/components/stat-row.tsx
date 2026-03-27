@@ -2,14 +2,14 @@ import { ProgressBar, Typography } from "@/components/ui";
 import type { ProductivityVariant } from "@/types/api";
 import { formatTime } from "@/utils/formatters";
 
-export type StatRowProps = {
+interface StatRowProps {
   label: string;
   variant: ProductivityVariant;
   value: number;
   total: number;
-};
+}
 
-export const StatRow = ({ label, variant, value, total }: StatRowProps) => {
+const StatRow = ({ label, variant, value, total }: StatRowProps) => {
   return (
     <div className="flex items-center gap-3">
       <Typography variant="label" color="secondary" className="w-24">
@@ -22,3 +22,6 @@ export const StatRow = ({ label, variant, value, total }: StatRowProps) => {
     </div>
   );
 };
+
+export type { StatRowProps };
+export { StatRow };

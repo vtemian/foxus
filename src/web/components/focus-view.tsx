@@ -1,11 +1,11 @@
 import { Card, CardBody, Typography } from "@/components/ui";
 import { formatBudget } from "@/utils/formatters";
 
-export type FocusViewProps = {
+interface FocusViewProps {
   budgetRemaining: number;
-};
+}
 
-export const FocusView = ({ budgetRemaining }: FocusViewProps) => {
+const FocusView = ({ budgetRemaining }: FocusViewProps) => {
   return (
     <Card variant="active" className="mb-4">
       <CardBody className="py-6 text-center">
@@ -22,3 +22,6 @@ export const FocusView = ({ budgetRemaining }: FocusViewProps) => {
     </Card>
   );
 };
+
+export type { FocusViewProps };
+export { FocusView };
