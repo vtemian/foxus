@@ -1,0 +1,59 @@
+name: Quality Gate
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  frontend:
+    name: Frontend Quality Gate
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run quality gate
+        run: npm run check
+
+  rust:
+    name: Rust Quality Gate
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+
+      - name: Cache cargo
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            src/tauri/target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('src/tauri/Cargo.lock') }}
+
+      - name: Check formatting
+        run: cd src/tauri && cargo fmt --all --check
+
+      - name: Run clippy
+        run: cd src/tauri && cargo clippy --all-targets -- -D warnings
+
+      - name: Run tests
+        run: cd src/tauri && cargo test
