@@ -24,9 +24,15 @@ Enforced by `[lints]` in `Cargo.toml`. CI fails on any violation.
 | `wildcard_enum_match_arm` | deny | Exhaustive matching |
 | `indexing_slicing` | deny | Use `.get()`, `.first()`, slice patterns |
 | `clone_on_ref_ptr` | deny | `Arc::clone(&x)` not `x.clone()` |
+| `implicit_clone` | deny | Explicit `.clone()` over implicit coercion |
+| `rc_buffer` | deny | Prevent double-indirection (`Rc<Vec<T>>`) |
+| `rc_mutex` | deny | Prevent double-indirection (`Rc<Mutex<T>>`) |
 | `allow_attributes_without_reason` | deny | Document every `#[allow]` |
 | `uninlined_format_args` | deny | `format!("{x}")` not `format!("{}", x)` |
+| `string_add` | deny | Use `format!` or `push_str`, not `+` |
 | `as_conversions` | deny | Use `TryFrom`/`From`, not `as` casts |
+| `empty_structs_with_brackets` | deny | ZST idiom: `struct S;` not `struct S {}` |
+| `rest_pat_in_fully_bound_structs` | deny | No hidden fields in struct destructuring |
 | `panic` | deny | Return `Result`, let callers decide error handling |
 | `unsafe_code` | deny | `#[expect]` with reason for justified FFI |
 
