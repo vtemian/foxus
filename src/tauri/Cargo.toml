@@ -57,3 +57,52 @@ module_name_repetitions = "allow"
 must_use_candidate = "allow"
 missing_errors_doc = "allow"
 missing_panics_doc = "allow"
+
+# ── Restriction lints (cherry-picked, deny) ────────────────────────
+# Error handling discipline
+unwrap_used = "deny"
+
+# No debug/dev artifacts in production
+todo = "deny"
+dbg_macro = "deny"
+
+# Use log crate, not prints
+print_stdout = "deny"
+print_stderr = "deny"
+
+# Exhaustive matching: compiler catches new enum variants
+wildcard_enum_match_arm = "deny"
+
+# Prevent silent panics from indexing
+indexing_slicing = "deny"
+
+# Make Rc/Arc cloning explicit
+clone_on_ref_ptr = "deny"
+
+# Document every lint suppression
+allow_attributes_without_reason = "deny"
+
+# Inline format args: format!("{x}") not format!("{}", x)
+uninlined_format_args = "deny"
+
+# Numeric cast safety: use TryFrom/From, not `as`
+as_conversions = "deny"
+
+# No explicit panics: return Result, let callers decide
+panic = "deny"
+
+# Use format! or push_str, not string + "..."
+string_add = "deny"
+
+# Prevent double-indirection anti-patterns (Rc<Vec<T>>, Rc<Mutex<T>>)
+rc_buffer = "deny"
+rc_mutex = "deny"
+
+# ZST idiom: `struct S;` not `struct S {}`
+empty_structs_with_brackets = "deny"
+
+# Exhaustive struct destructuring: no hidden fields
+rest_pat_in_fully_bound_structs = "deny"
+
+# Make allocations visible: explicit .clone() over implicit coercion
+implicit_clone = "deny"
