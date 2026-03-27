@@ -51,6 +51,10 @@ impl TrackerService {
         clippy::cast_possible_truncation,
         reason = "poll_interval_secs is always a small config value (e.g. 5), safe to cast to i32"
     )]
+    #[expect(
+        clippy::as_conversions,
+        reason = "u64 -> i64 and u64 -> i32 casts are safe: timestamps won't overflow i64, poll_interval is a small config value"
+    )]
     pub fn start(&self) -> thread::JoinHandle<()> {
         self.running.store(true, Ordering::SeqCst);
 
@@ -180,6 +184,10 @@ mod tests {
         clippy::cast_possible_wrap,
         reason = "Unix timestamps won't exceed i64::MAX until year 292 billion"
     )]
+    #[expect(
+        clippy::as_conversions,
+        reason = "u64 -> i64 widening cast is safe for timestamps (won't overflow until year 292 billion)"
+    )]
     fn test_tracker_saves_activities_to_db() {
         use crate::models::Activity;
 
@@ -223,7 +231,7 @@ mod tests {
             "Expected exactly one activity to be saved"
         );
 
-        let saved = &activities[0];
+        let saved = activities.first().unwrap();
         assert_eq!(saved.source, "app");
         assert_eq!(saved.app_name, Some("TestApp".to_string()));
         assert_eq!(saved.window_title, Some("Test Window".to_string()));

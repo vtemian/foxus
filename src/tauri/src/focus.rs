@@ -71,6 +71,10 @@ impl FocusManager {
         clippy::cast_possible_wrap,
         reason = "Unix timestamps won't exceed i64::MAX until year 292 billion"
     )]
+    #[expect(
+        clippy::as_conversions,
+        reason = "u64 -> i64 widening cast is safe for timestamps (won't overflow until year 292 billion)"
+    )]
     pub fn get_state(&self) -> rusqlite::Result<FocusState> {
         let db = self.lock_db();
         let conn = db.connection();
@@ -271,6 +275,10 @@ impl FocusManager {
     clippy::cast_possible_truncation,
     reason = "Day-of-week and time values are always small (< 60), well within u32 range"
 )]
+#[expect(
+    clippy::as_conversions,
+    reason = "u64 -> u32 narrowing cast is safe because values are always small (day 1-7, hours < 24, minutes < 60)"
+)]
 fn get_current_day_and_time() -> (u32, String) {
     let now = SystemTime::now()
         .duration_since(UNIX_EPOCH)
@@ -447,10 +455,14 @@ mod tests {
             5,
             "Time should be 5 characters (HH:MM), got {time}"
         );
-        assert_eq!(&time[2..3], ":", "Time should have colon at position 2");
+        assert_eq!(
+            time.get(2..3),
+            Some(":"),
+            "Time should have colon at position 2"
+        );
 
-        let hours: u32 = time[0..2].parse().unwrap();
-        let minutes: u32 = time[3..5].parse().unwrap();
+        let hours: u32 = time.get(0..2).unwrap().parse().unwrap();
+        let minutes: u32 = time.get(3..5).unwrap().parse().unwrap();
         assert!(hours < 24, "Hours should be < 24, got {hours}");
         assert!(minutes < 60, "Minutes should be < 60, got {minutes}");
     }

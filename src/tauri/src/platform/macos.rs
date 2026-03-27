@@ -90,6 +90,10 @@ impl PlatformTracker for MacOSTracker {
     clippy::cast_sign_loss,
     reason = "Idle time in seconds is always a small non-negative value, safe to cast to u64"
 )]
+#[expect(
+    clippy::as_conversions,
+    reason = "f64 -> u64 cast is safe because idle_secs is clamped to >= 0.0"
+)]
 fn get_idle_time_secs_internal() -> u64 {
     // CGEventSourceSecondsSinceLastEventType is not exposed by the core-graphics crate,
     // so we use the raw FFI binding directly.
@@ -122,7 +126,9 @@ fn get_idle_time_secs_internal() -> u64 {
 fn get_window_title() -> Option<String> {
     // Check cache first
     {
-        let guard = WINDOW_TITLE_CACHE.lock().unwrap();
+        let guard = WINDOW_TITLE_CACHE
+            .lock()
+            .expect("window title cache mutex poisoned");
         if let Some(cache) = guard.as_ref() {
             if let Some(cached_title) = cache.get() {
                 return cached_title.clone();
@@ -135,7 +141,9 @@ fn get_window_title() -> Option<String> {
 
     // Update cache
     {
-        let mut guard = WINDOW_TITLE_CACHE.lock().unwrap();
+        let mut guard = WINDOW_TITLE_CACHE
+            .lock()
+            .expect("window title cache mutex poisoned");
         let cache = guard.get_or_insert_with(WindowTitleCache::new);
         cache.set(title.clone());
     }
@@ -167,6 +175,10 @@ mod tests {
 
     #[test]
     #[ignore = "Requires GUI environment - run manually with: cargo test macos -- --ignored --nocapture"]
+    #[expect(
+        clippy::print_stdout,
+        reason = "Manual diagnostic test requires visible output for interactive verification"
+    )]
     fn test_get_active_window() {
         let tracker = MacOSTracker::new();
         // This test may fail in CI but should work locally
@@ -178,6 +190,10 @@ mod tests {
 
     #[test]
     #[ignore = "Requires GUI environment - run manually with: cargo test macos -- --ignored --nocapture"]
+    #[expect(
+        clippy::print_stdout,
+        reason = "Manual diagnostic test requires visible output for interactive verification"
+    )]
     fn test_get_idle_time() {
         let tracker = MacOSTracker::new();
         let idle = tracker.get_idle_time_secs();

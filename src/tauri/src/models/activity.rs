@@ -124,7 +124,7 @@ mod tests {
 
         let found = Activity::find_in_range(db.connection(), now - 10, now + 10).unwrap();
         assert_eq!(found.len(), 1);
-        assert_eq!(found[0].app_name, Some("VSCode".to_string()));
+        assert_eq!(found.first().unwrap().app_name, Some("VSCode".to_string()));
     }
 
     #[test]

@@ -87,6 +87,10 @@ pub fn get_weekly_stats(db: State<Arc<Mutex<Database>>>) -> Result<WeeklyStatsRe
     clippy::cast_possible_wrap,
     reason = "Unix timestamps won't exceed i64::MAX until year 292 billion"
 )]
+#[expect(
+    clippy::as_conversions,
+    reason = "u64 -> i64 widening cast is safe for timestamps (won't overflow until year 292 billion)"
+)]
 fn get_current_timestamp() -> Result<i64, String> {
     SystemTime::now()
         .duration_since(UNIX_EPOCH)
@@ -125,6 +129,10 @@ fn calculate_productivity_totals(
     clippy::cast_possible_truncation,
     clippy::cast_possible_wrap,
     reason = "limit is always a small value (5 or 10), well within i32 range"
+)]
+#[expect(
+    clippy::as_conversions,
+    reason = "usize -> i32 narrowing cast is safe because limit is always a small constant (5 or 10)"
 )]
 fn query_top_apps(
     conn: &rusqlite::Connection,

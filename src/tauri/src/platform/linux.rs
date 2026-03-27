@@ -21,17 +21,28 @@ impl LinuxTracker {
                 // Validate screen_num is within bounds to avoid potential panic
                 let setup = conn.setup();
                 if screen_num >= setup.roots.len() {
-                    eprintln!(
-                        "Warning: Invalid screen number {} (only {} screens available). Window tracking disabled.",
-                        screen_num,
-                        setup.roots.len()
-                    );
+                    #[expect(
+                        clippy::print_stderr,
+                        reason = "Platform initialization warning before log crate is available"
+                    )]
+                    {
+                        eprintln!(
+                            "Warning: Invalid screen number {screen_num} (only {} screens available). Window tracking disabled.",
+                            setup.roots.len()
+                        );
+                    }
                     return Self {
                         conn: None,
                         root: 0,
                     };
                 }
-                let screen = &setup.roots[screen_num];
+                // Safety: screen_num bounds-checked above (returns early if out of range)
+                let Some(screen) = setup.roots.get(screen_num) else {
+                    return Self {
+                        conn: None,
+                        root: 0,
+                    };
+                };
                 let root = screen.root;
                 Self {
                     conn: Some(conn),
@@ -41,10 +52,15 @@ impl LinuxTracker {
             Err(e) => {
                 // Log the error but don't panic - the tracker will return empty results
                 // This allows the app to run on Wayland or headless systems
-                eprintln!(
-                    "Warning: Failed to connect to X server: {}. Window tracking disabled.",
-                    e
-                );
+                #[expect(
+                    clippy::print_stderr,
+                    reason = "Platform initialization warning before log crate is available"
+                )]
+                {
+                    eprintln!(
+                        "Warning: Failed to connect to X server: {e}. Window tracking disabled.",
+                    );
+                }
                 Self {
                     conn: None,
                     root: 0,
@@ -88,16 +104,8 @@ impl LinuxTracker {
             .reply()
             .ok()?;
 
-        if reply.value.len() >= 4 {
-            Some(u32::from_ne_bytes([
-                reply.value[0],
-                reply.value[1],
-                reply.value[2],
-                reply.value[3],
-            ]))
-        } else {
-            None
-        }
+        let bytes: [u8; 4] = reply.value.get(..4)?.try_into().ok()?;
+        Some(u32::from_ne_bytes(bytes))
     }
 }
 
@@ -116,7 +124,7 @@ impl PlatformTracker for LinuxTracker {
         let class_atom = AtomEnum::WM_CLASS.into();
         let app_name = self
             .get_window_property(window_id, class_atom)
-            .map(|s| s.split('\0').next().unwrap_or("Unknown").to_string())
+            .and_then(|s| s.split('\0').next().map(ToString::to_string))
             .unwrap_or_else(|| "Unknown".to_string());
 
         Some(ActiveWindow {
@@ -146,6 +154,10 @@ mod tests {
 
     #[test]
     #[ignore] // Requires X11 display
+    #[expect(
+        clippy::print_stdout,
+        reason = "Manual diagnostic test requires visible output for interactive verification"
+    )]
     fn test_get_active_window() {
         let tracker = LinuxTracker::new();
         if let Some(window) = tracker.get_active_window() {
@@ -155,11 +167,15 @@ mod tests {
 
     #[test]
     #[ignore] // Requires X11 display
+    #[expect(
+        clippy::print_stdout,
+        reason = "Manual diagnostic test requires visible output for interactive verification"
+    )]
     fn test_get_idle_time() {
         let tracker = LinuxTracker::new();
         let idle = tracker.get_idle_time_secs();
         // Should be a reasonable value (less than a day in seconds)
         assert!(idle < 86400);
-        println!("Idle time: {} seconds", idle);
+        println!("Idle time: {idle} seconds");
     }
 }

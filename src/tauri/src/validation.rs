@@ -46,12 +46,20 @@ pub fn validate_time_format(time: &str) -> Result<(), AppError> {
         reason: reason.into(),
     };
 
-    if time.len() != 5 || &time[2..3] != ":" {
+    if time.len() != 5 || time.get(2..3) != Some(":") {
         return Err(err("must be in HH:MM format"));
     }
 
-    let hours: u32 = time[0..2].parse().map_err(|_| err("invalid hours"))?;
-    let minutes: u32 = time[3..5].parse().map_err(|_| err("invalid minutes"))?;
+    let hours: u32 = time
+        .get(0..2)
+        .ok_or_else(|| err("must be in HH:MM format"))?
+        .parse()
+        .map_err(|_| err("invalid hours"))?;
+    let minutes: u32 = time
+        .get(3..5)
+        .ok_or_else(|| err("must be in HH:MM format"))?
+        .parse()
+        .map_err(|_| err("invalid minutes"))?;
 
     if hours >= 24 {
         return Err(err("hours must be 00-23"));

@@ -240,7 +240,7 @@ mod tests {
 
         let enabled = FocusSchedule::find_enabled(conn).unwrap();
         assert_eq!(enabled.len(), 1);
-        assert_eq!(enabled[0].start_time, "09:00");
+        assert_eq!(enabled.first().unwrap().start_time, "09:00");
     }
 
     #[test]

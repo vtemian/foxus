@@ -3,6 +3,13 @@
 //! This binary runs as a standalone native messaging host for the Foxus Chrome extension.
 //! It communicates via stdin/stdout using Chrome's native messaging protocol.
 
+// Native messaging host uses stderr for logging because stdout is reserved
+// for the Chrome Native Messaging protocol (length-prefixed JSON).
+#![expect(
+    clippy::print_stderr,
+    reason = "Native messaging host uses stderr for logging because stdout is reserved for the Chrome protocol"
+)]
+
 use directories::ProjectDirs;
 use foxus_lib::{
     categorizer::Categorizer,

@@ -264,7 +264,11 @@ pub fn run() {
             )?;
 
             let tray = TrayIconBuilder::new()
-                .icon(app.default_window_icon().unwrap().clone())
+                .icon(
+                    app.default_window_icon()
+                        .expect("default window icon must be set in tauri.conf.json")
+                        .clone(),
+                )
                 .icon_as_template(true)
                 .menu(&menu)
                 .show_menu_on_left_click(true)

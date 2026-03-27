@@ -15,6 +15,10 @@ pub struct FocusSession {
     clippy::cast_possible_wrap,
     reason = "Unix timestamps won't exceed i64::MAX until year 292 billion"
 )]
+#[expect(
+    clippy::as_conversions,
+    reason = "u64 -> i64 widening cast is safe for timestamps (won't overflow until year 292 billion)"
+)]
 fn current_timestamp() -> i64 {
     SystemTime::now()
         .duration_since(UNIX_EPOCH)

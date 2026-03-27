@@ -35,7 +35,13 @@ pub fn create_category(
             AppError::Database(db_err) if is_unique_violation(db_err) => {
                 AppError::AlreadyExists { name: name.into() }
             }
-            _ => e,
+            AppError::AlreadyExists { .. }
+            | AppError::NotFound { .. }
+            | AppError::InvalidInput { .. }
+            | AppError::DeleteFailed { .. }
+            | AppError::Database(_)
+            | AppError::LockPoisoned
+            | AppError::Internal(_) => e,
         })?;
 
     Ok(CategoryResponse::from(category))
@@ -60,7 +66,13 @@ pub fn update_category(
             AppError::Database(db_err) if is_unique_violation(db_err) => {
                 AppError::AlreadyExists { name: name.into() }
             }
-            _ => e,
+            AppError::AlreadyExists { .. }
+            | AppError::NotFound { .. }
+            | AppError::InvalidInput { .. }
+            | AppError::DeleteFailed { .. }
+            | AppError::Database(_)
+            | AppError::LockPoisoned
+            | AppError::Internal(_) => e,
         })?;
 
     Ok(result)
@@ -76,7 +88,13 @@ pub fn delete_category(db: State<Arc<Mutex<Database>>>, id: i64) -> Result<bool,
         AppError::Database(db_err) if is_fk_violation(db_err) => AppError::DeleteFailed {
             reason: "category is used by rules or activities".into(),
         },
-        _ => e,
+        AppError::AlreadyExists { .. }
+        | AppError::NotFound { .. }
+        | AppError::InvalidInput { .. }
+        | AppError::DeleteFailed { .. }
+        | AppError::Database(_)
+        | AppError::LockPoisoned
+        | AppError::Internal(_) => e,
     })?;
 
     Ok(result)

@@ -76,8 +76,12 @@ impl Categorizer {
                 if part.is_empty() {
                     continue;
                 }
-                if let Some(found) = text_lower[pos..].find(part) {
-                    pos += found + part.len();
+                if let Some(remaining) = text_lower.get(pos..) {
+                    if let Some(found) = remaining.find(part) {
+                        pos += found + part.len();
+                    } else {
+                        return false;
+                    }
                 } else {
                     return false;
                 }

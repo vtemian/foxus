@@ -209,11 +209,12 @@ mod tests {
 
         // Verify ordering: highest priority first
         // high_priority (20) should come before default rules (10) and low_priority (5)
+        let first_rule = rules.first().unwrap();
         assert_eq!(
-            rules[0].pattern, "high_priority",
+            first_rule.pattern, "high_priority",
             "Highest priority rule should be first"
         );
-        assert_eq!(rules[0].priority, 20);
+        assert_eq!(first_rule.priority, 20);
 
         // low_priority should be last
         let last_rule = rules.last().unwrap();

@@ -74,6 +74,10 @@ impl NativeHost {
         }
     }
 
+    #[expect(
+        clippy::as_conversions,
+        reason = "u32 -> usize widening cast is safe on all supported platforms (32-bit and 64-bit)"
+    )]
     fn read_message() -> io::Result<IncomingMessage> {
         // Chrome Native Messaging protocol specifies little-endian byte order
         let mut len_bytes = [0u8; 4];
@@ -96,6 +100,10 @@ impl NativeHost {
     #[expect(
         clippy::cast_possible_truncation,
         reason = "Message size is validated to be <= MAX_MESSAGE_SIZE (1MB), well within u32 range"
+    )]
+    #[expect(
+        clippy::as_conversions,
+        reason = "usize -> u32 narrowing cast is safe because json.len() is validated <= MAX_MESSAGE_SIZE (1MB)"
     )]
     fn write_message(message: &OutgoingMessage) -> io::Result<()> {
         let json = serde_json::to_vec(message)?;
@@ -139,22 +147,17 @@ impl NativeHost {
         clippy::cast_possible_wrap,
         reason = "Unix timestamps won't exceed i64::MAX until year 292 billion"
     )]
+    #[expect(
+        clippy::as_conversions,
+        reason = "u64 -> i64 widening cast is safe for timestamps (won't overflow until year 292 billion)"
+    )]
     fn record_activity(&self, url: &str, title: &str, _timestamp: i64) {
         // Input validation: limit URL and title length to prevent DoS
         const MAX_URL_LEN: usize = 2048;
         const MAX_TITLE_LEN: usize = 512;
 
-        let url = if url.len() > MAX_URL_LEN {
-            &url[..MAX_URL_LEN]
-        } else {
-            url
-        };
-
-        let title = if title.len() > MAX_TITLE_LEN {
-            &title[..MAX_TITLE_LEN]
-        } else {
-            title
-        };
+        let url = url.get(..MAX_URL_LEN).unwrap_or(url);
+        let title = title.get(..MAX_TITLE_LEN).unwrap_or(title);
 
         let domain = extract_domain(url);
         let timestamp = SystemTime::now()
