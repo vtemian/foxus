@@ -63,18 +63,23 @@ const useLoadFocusState = (setError: (e: Error) => void) => {
   return { focusState, loadFocusState };
 };
 
-const useRefresh = (loadStats: () => Promise<void>, loadFocusState: () => Promise<void>) => {
+const useRefresh = (
+  loadStats: () => Promise<void>,
+  loadFocusState: () => Promise<void>,
+  clearError: () => void,
+) => {
   const refreshInProgress = useRef(false);
 
   const refresh = useCallback(async () => {
     if (refreshInProgress.current) return;
     refreshInProgress.current = true;
+    clearError();
     try {
       await Promise.all([loadStats(), loadFocusState()]);
     } finally {
       refreshInProgress.current = false;
     }
-  }, [loadStats, loadFocusState]);
+  }, [loadStats, loadFocusState, clearError]);
 
   return refresh;
 };
@@ -99,10 +104,11 @@ const useTauri = (): UseTauriReturn => {
   const [error, setError] = useState<Error | null>(null);
 
   const stableSetError = useCallback((e: Error) => setError(e), []);
+  const clearError = useCallback(() => setError(null), []);
   const { stats, loadStats } = useLoadStats(stableSetError);
   const { weeklyStats, loadWeeklyStats } = useLoadWeeklyStats(stableSetError);
   const { focusState, loadFocusState } = useLoadFocusState(stableSetError);
-  const refresh = useRefresh(loadStats, loadFocusState);
+  const refresh = useRefresh(loadStats, loadFocusState, clearError);
 
   const toggleFocus = useCallback(async () => {
     if (!focusState) return;

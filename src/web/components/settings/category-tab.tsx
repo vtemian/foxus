@@ -1,12 +1,10 @@
 import { useState } from "react";
 import { CategoryForm } from "@/components/settings/category-form";
-import { IconButton, productivityLabel } from "@/components/settings/shared";
+import { ADD_BUTTON_CLASS, IconButton, productivityLabel } from "@/components/settings/shared";
 import type { CategoriesTabProps } from "@/components/settings/types";
 import { Badge, Card, Typography } from "@/components/ui";
 import type { Category, ProductivityLevel } from "@/types/api";
 import { productivityToVariant } from "@/types/api";
-
-const ADD_BUTTON_CLASS = "font-mono text-[10px] text-gray-400 hover:text-gray-600 px-2 py-1";
 
 const CategoryRow = ({
   name,

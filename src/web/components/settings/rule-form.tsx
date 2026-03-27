@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { BUTTON_MUTED_CLASS, INPUT_CLASS } from "@/components/settings/shared";
+import { FormActions, INPUT_CLASS } from "@/components/settings/shared";
 import type { RuleFormProps } from "@/components/settings/types";
 import type { Category, MatchType } from "@/types/api";
 
@@ -51,29 +51,6 @@ const CategorySelect = ({
       </option>
     ))}
   </select>
-);
-
-const FormActions = ({
-  saving,
-  disabled,
-  onCancel,
-}: {
-  saving: boolean;
-  disabled: boolean;
-  onCancel: () => void;
-}) => (
-  <div className="flex gap-2">
-    <button
-      type="submit"
-      disabled={saving || disabled}
-      className="font-mono text-xs text-gray-600 hover:text-gray-800 disabled:text-gray-300 px-2 py-1"
-    >
-      {saving ? "..." : "Save"}
-    </button>
-    <button type="button" onClick={onCancel} className={BUTTON_MUTED_CLASS}>
-      Cancel
-    </button>
-  </div>
 );
 
 const useRuleFormState = (initial: RuleFormProps["initial"], categories: Category[]) => {

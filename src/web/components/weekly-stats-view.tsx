@@ -2,14 +2,13 @@ import { AppListItem } from "@/components/app-list-item";
 import { StatRow } from "@/components/stat-row";
 import { Card, CardBody, CardHeader, CardTitle, Typography } from "@/components/ui";
 import type { DailyStats, WeeklyStats } from "@/types/api";
-import { formatTime } from "@/utils/formatters";
+import { formatTime, MS_PER_SECOND } from "@/utils/formatters";
 
 interface WeeklyStatsViewProps {
   stats: WeeklyStats | null;
 }
 
 const DAY_NAMES = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-const MS_PER_SECOND = 1000;
 const PERCENTAGE_SCALE = 100;
 const MIN_BAR_HEIGHT = 4;
 

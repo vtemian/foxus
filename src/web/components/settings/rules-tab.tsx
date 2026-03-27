@@ -1,11 +1,9 @@
 import { useState } from "react";
 import { RuleForm } from "@/components/settings/rule-form";
-import { IconButton } from "@/components/settings/shared";
+import { ADD_BUTTON_CLASS, IconButton } from "@/components/settings/shared";
 import type { RulesTabProps } from "@/components/settings/types";
 import { Card, Typography } from "@/components/ui";
 import type { Category, MatchType, Rule } from "@/types/api";
-
-const ADD_BUTTON_CLASS = "font-mono text-[10px] text-gray-400 hover:text-gray-600 px-2 py-1";
 
 const RuleRow = ({
   pattern,

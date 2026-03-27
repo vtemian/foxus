@@ -35,9 +35,14 @@ const handleOperationError = (e: unknown, setError: (msg: string) => void): neve
   throw new Error(msg);
 };
 
-const useInvokeWithReload = (reload: () => Promise<void>, setError: (msg: string) => void) => {
+const useInvokeWithReload = (
+  reload: () => Promise<void>,
+  setError: (msg: string) => void,
+  clearError: () => void,
+) => {
   const invokeAndReload = useCallback(
     async (cmd: string, args?: Record<string, unknown>) => {
+      clearError();
       try {
         await invoke(cmd, args);
         await reload();
@@ -45,7 +50,7 @@ const useInvokeWithReload = (reload: () => Promise<void>, setError: (msg: string
         handleOperationError(e, setError);
       }
     },
-    [reload, setError],
+    [reload, setError, clearError],
   );
 
   return invokeAndReload;
@@ -84,8 +89,9 @@ const useLoadRules = () => {
 const useCategoryOperations = (
   loadCategories: () => Promise<void>,
   setError: (msg: string) => void,
+  clearError: () => void,
 ) => {
-  const run = useInvokeWithReload(loadCategories, setError);
+  const run = useInvokeWithReload(loadCategories, setError, clearError);
 
   const createCategory = useCallback(
     (name: string, productivity: ProductivityLevel) =>
@@ -104,8 +110,12 @@ const useCategoryOperations = (
   return { createCategory, updateCategory, deleteCategory };
 };
 
-const useRuleOperations = (loadRules: () => Promise<void>, setError: (msg: string) => void) => {
-  const run = useInvokeWithReload(loadRules, setError);
+const useRuleOperations = (
+  loadRules: () => Promise<void>,
+  setError: (msg: string) => void,
+  clearError: () => void,
+) => {
+  const run = useInvokeWithReload(loadRules, setError, clearError);
 
   const createRule = useCallback(
     (pattern: string, matchType: MatchType, categoryId: number, priority: number) =>
@@ -132,8 +142,9 @@ const useSettings = (): UseSettingsReturn => {
   const { rules, loadRules } = useLoadRules();
 
   const stableSetError = useCallback((msg: string) => setError(msg), []);
-  const categoryOps = useCategoryOperations(loadCategories, stableSetError);
-  const ruleOps = useRuleOperations(loadRules, stableSetError);
+  const clearError = useCallback(() => setError(null), []);
+  const categoryOps = useCategoryOperations(loadCategories, stableSetError, clearError);
+  const ruleOps = useRuleOperations(loadRules, stableSetError, clearError);
 
   const refresh = useCallback(async () => {
     setError(null);

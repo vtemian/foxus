@@ -56,6 +56,12 @@ interface IconButtonProps {
   children: React.ReactNode;
 }
 
+interface FormActionsProps {
+  saving: boolean;
+  disabled: boolean;
+  onCancel: () => void;
+}
+
 interface SettingsViewProps {
   onClose: () => void;
 }
@@ -63,6 +69,7 @@ interface SettingsViewProps {
 export type {
   CategoriesTabProps,
   CategoryFormProps,
+  FormActionsProps,
   IconButtonProps,
   RuleFormProps,
   RulesTabProps,

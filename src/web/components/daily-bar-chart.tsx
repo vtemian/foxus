@@ -1,6 +1,6 @@
 import { Bar, BarChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import type { DailyStats } from "@/types/api";
-import { formatTime } from "@/utils/formatters";
+import { formatTime, MS_PER_SECOND, SECONDS_PER_HOUR } from "@/utils/formatters";
 
 interface DailyBarChartProps {
   dailyStats: DailyStats[];
@@ -18,8 +18,6 @@ const AXIS_STYLE = {
   fontFamily: "monospace",
 };
 
-const MS_PER_SECOND = 1000;
-const SECONDS_PER_HOUR = 3600;
 const TOP_BAR_RADIUS = 4;
 const CHART_HEIGHT = 180;
 const CHART_LEFT_MARGIN = -20;
