@@ -32,22 +32,13 @@ export type CardProps = React.ComponentProps<"div"> & {
   variant?: CardVariant;
 };
 
-export const Card = ({
-  variant = "default",
-  className,
-  children,
-  ...props
-}: CardProps) => {
+export const Card = ({ variant = "default", className, children, ...props }: CardProps) => {
   return (
     <CardContext.Provider value={variant}>
       <div
         data-slot="card"
         data-variant={variant}
-        className={cn(
-          "bg-gray-150 border p-4",
-          cardVariantClassNames[variant],
-          className
-        )}
+        className={cn("bg-gray-150 border p-4", cardVariantClassNames[variant], className)}
         {...props}
       >
         {children}
@@ -95,10 +86,9 @@ export const CardTitle = ({ className, ...props }: CardTitleProps) => {
       className={cn(
         "font-mono text-xs font-semibold uppercase tracking-widest",
         cardTitleVariantClasses[variant],
-        className
+        className,
       )}
       {...props}
     />
   );
 };
-

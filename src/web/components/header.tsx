@@ -31,6 +31,7 @@ export const Header = ({ period, onPeriodChange, onSettingsClick, showSettings }
           </>
         )}
         <button
+          type="button"
           onClick={onSettingsClick}
           className="font-mono text-xs text-gray-400 hover:text-gray-600 px-2 py-1"
           aria-label={showSettings ? "Close settings" : "Open settings"}

@@ -16,9 +16,7 @@ export const FocusView = ({ budgetRemaining }: FocusViewProps) => {
           <Typography variant="label" color="muted">
             Budget remaining
           </Typography>
-          <Typography variant="budget">
-            {formatBudget(budgetRemaining)}
-          </Typography>
+          <Typography variant="budget">{formatBudget(budgetRemaining)}</Typography>
         </div>
       </CardBody>
     </Card>

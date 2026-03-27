@@ -1,4 +1,4 @@
-import { PieChart, Pie, Cell, ResponsiveContainer, Legend } from "recharts";
+import { Cell, Legend, Pie, PieChart, ResponsiveContainer } from "recharts";
 import { formatTime } from "@/utils/formatters";
 
 export type ProductivityPieChartProps = {
@@ -89,10 +89,7 @@ export const ProductivityPieChart = ({
           </Pie>
           <Legend
             content={(props) => (
-              <LegendContent
-                payload={props.payload as readonly LegendPayloadItem[]}
-                data={data}
-              />
+              <LegendContent payload={props.payload as readonly LegendPayloadItem[]} data={data} />
             )}
             verticalAlign="bottom"
           />

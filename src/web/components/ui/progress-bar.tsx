@@ -1,5 +1,5 @@
-import type * as React from "react";
 import { cva, type VariantProps } from "class-variance-authority";
+import type * as React from "react";
 import { cn } from "@/utils/helpers";
 
 const progressBarVariants = cva(["h-1 transition-all duration-300 ease-out"], {
@@ -41,10 +41,7 @@ export const ProgressBar = ({
       className={cn("h-1 flex-1 bg-gray-250 overflow-hidden", className)}
       {...props}
     >
-      <div
-        className={cn(progressBarVariants({ variant }))}
-        style={{ width: `${percentage}%` }}
-      />
+      <div className={cn(progressBarVariants({ variant }))} style={{ width: `${percentage}%` }} />
     </div>
   );
 };

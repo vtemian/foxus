@@ -1,6 +1,6 @@
 import { invoke } from "@tauri-apps/api/core";
-import { useState, useEffect, useCallback } from "react";
-import type { Category, Rule, ProductivityLevel, MatchType } from "@/types/api";
+import { useCallback, useEffect, useState } from "react";
+import type { Category, MatchType, ProductivityLevel, Rule } from "@/types/api";
 
 export type UseSettingsReturn = {
   categories: Category[];
@@ -12,8 +12,19 @@ export type UseSettingsReturn = {
   updateCategory: (id: number, name: string, productivity: ProductivityLevel) => Promise<void>;
   deleteCategory: (id: number) => Promise<void>;
   // Rule operations
-  createRule: (pattern: string, matchType: MatchType, categoryId: number, priority: number) => Promise<void>;
-  updateRule: (id: number, pattern: string, matchType: MatchType, categoryId: number, priority: number) => Promise<void>;
+  createRule: (
+    pattern: string,
+    matchType: MatchType,
+    categoryId: number,
+    priority: number,
+  ) => Promise<void>;
+  updateRule: (
+    id: number,
+    pattern: string,
+    matchType: MatchType,
+    categoryId: number,
+    priority: number,
+  ) => Promise<void>;
   deleteRule: (id: number) => Promise<void>;
   // Refresh
   refresh: () => Promise<void>;
@@ -55,100 +66,113 @@ export const useSettings = (): UseSettingsReturn => {
   }, [loadCategories, loadRules]);
 
   // Category operations
-  const createCategory = useCallback(async (name: string, productivity: ProductivityLevel) => {
-    setError(null);
-    try {
-      await invoke("create_category", { name, productivity });
-      await loadCategories();
-    } catch (e) {
-      const msg = e instanceof Error ? e.message : String(e);
-      setError(msg);
-      throw new Error(msg);
-    }
-  }, [loadCategories]);
+  const createCategory = useCallback(
+    async (name: string, productivity: ProductivityLevel) => {
+      setError(null);
+      try {
+        await invoke("create_category", { name, productivity });
+        await loadCategories();
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e);
+        setError(msg);
+        throw new Error(msg);
+      }
+    },
+    [loadCategories],
+  );
 
-  const updateCategory = useCallback(async (id: number, name: string, productivity: ProductivityLevel) => {
-    setError(null);
-    try {
-      await invoke("update_category", { id, name, productivity });
-      await loadCategories();
-    } catch (e) {
-      const msg = e instanceof Error ? e.message : String(e);
-      setError(msg);
-      throw new Error(msg);
-    }
-  }, [loadCategories]);
+  const updateCategory = useCallback(
+    async (id: number, name: string, productivity: ProductivityLevel) => {
+      setError(null);
+      try {
+        await invoke("update_category", { id, name, productivity });
+        await loadCategories();
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e);
+        setError(msg);
+        throw new Error(msg);
+      }
+    },
+    [loadCategories],
+  );
 
-  const deleteCategory = useCallback(async (id: number) => {
-    setError(null);
-    try {
-      await invoke("delete_category", { id });
-      await loadCategories();
-    } catch (e) {
-      const msg = e instanceof Error ? e.message : String(e);
-      setError(msg);
-      throw new Error(msg);
-    }
-  }, [loadCategories]);
+  const deleteCategory = useCallback(
+    async (id: number) => {
+      setError(null);
+      try {
+        await invoke("delete_category", { id });
+        await loadCategories();
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e);
+        setError(msg);
+        throw new Error(msg);
+      }
+    },
+    [loadCategories],
+  );
 
   // Rule operations
-  const createRule = useCallback(async (
-    pattern: string,
-    matchType: MatchType,
-    categoryId: number,
-    priority: number
-  ) => {
-    setError(null);
-    try {
-      await invoke("create_rule", {
-        pattern,
-        matchType,
-        categoryId,
-        priority,
-      });
-      await loadRules();
-    } catch (e) {
-      const msg = e instanceof Error ? e.message : String(e);
-      setError(msg);
-      throw new Error(msg);
-    }
-  }, [loadRules]);
+  const createRule = useCallback(
+    async (pattern: string, matchType: MatchType, categoryId: number, priority: number) => {
+      setError(null);
+      try {
+        await invoke("create_rule", {
+          pattern,
+          matchType,
+          categoryId,
+          priority,
+        });
+        await loadRules();
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e);
+        setError(msg);
+        throw new Error(msg);
+      }
+    },
+    [loadRules],
+  );
 
-  const updateRule = useCallback(async (
-    id: number,
-    pattern: string,
-    matchType: MatchType,
-    categoryId: number,
-    priority: number
-  ) => {
-    setError(null);
-    try {
-      await invoke("update_rule", {
-        id,
-        pattern,
-        matchType,
-        categoryId,
-        priority,
-      });
-      await loadRules();
-    } catch (e) {
-      const msg = e instanceof Error ? e.message : String(e);
-      setError(msg);
-      throw new Error(msg);
-    }
-  }, [loadRules]);
+  const updateRule = useCallback(
+    async (
+      id: number,
+      pattern: string,
+      matchType: MatchType,
+      categoryId: number,
+      priority: number,
+    ) => {
+      setError(null);
+      try {
+        await invoke("update_rule", {
+          id,
+          pattern,
+          matchType,
+          categoryId,
+          priority,
+        });
+        await loadRules();
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e);
+        setError(msg);
+        throw new Error(msg);
+      }
+    },
+    [loadRules],
+  );
 
-  const deleteRule = useCallback(async (id: number) => {
-    setError(null);
-    try {
-      await invoke("delete_rule", { id });
-      await loadRules();
-    } catch (e) {
-      const msg = e instanceof Error ? e.message : String(e);
-      setError(msg);
-      throw new Error(msg);
-    }
-  }, [loadRules]);
+  const deleteRule = useCallback(
+    async (id: number) => {
+      setError(null);
+      try {
+        await invoke("delete_rule", { id });
+        await loadRules();
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e);
+        setError(msg);
+        throw new Error(msg);
+      }
+    },
+    [loadRules],
+  );
 
   // Initial load
   useEffect(() => {

@@ -1,6 +1,6 @@
-import { Typography, Badge } from "@/components/ui";
+import { Badge, Typography } from "@/components/ui";
+import { type AppActivity, productivityToVariant } from "@/types/api";
 import { formatTime } from "@/utils/formatters";
-import { productivityToVariant, type AppActivity } from "@/types/api";
 
 export type AppListItemProps = {
   app: AppActivity;

@@ -1,8 +1,8 @@
-import { Card, CardHeader, CardBody, CardTitle, Typography } from "@/components/ui";
-import { StatRow } from "./stat-row";
-import { AppListItem } from "./app-list-item";
-import type { WeeklyStats, DailyStats } from "@/types/api";
+import { Card, CardBody, CardHeader, CardTitle, Typography } from "@/components/ui";
+import type { DailyStats, WeeklyStats } from "@/types/api";
 import { formatTime } from "@/utils/formatters";
+import { AppListItem } from "./app-list-item";
+import { StatRow } from "./stat-row";
 
 export type WeeklyStatsViewProps = {
   stats: WeeklyStats | null;
@@ -19,11 +19,9 @@ const DailyBar = ({ day, maxTotal }: { day: DailyStats; maxTotal: number }) => {
   const total = day.productive_secs + day.neutral_secs + day.distracting_secs;
   const height = maxTotal > 0 ? Math.max((total / maxTotal) * 100, 4) : 4;
 
-  const productiveHeight =
-    total > 0 ? (day.productive_secs / total) * height : 0;
+  const productiveHeight = total > 0 ? (day.productive_secs / total) * height : 0;
   const neutralHeight = total > 0 ? (day.neutral_secs / total) * height : 0;
-  const distractingHeight =
-    total > 0 ? (day.distracting_secs / total) * height : 0;
+  const distractingHeight = total > 0 ? (day.distracting_secs / total) * height : 0;
 
   return (
     <div className="flex flex-col items-center gap-1">
@@ -32,10 +30,7 @@ const DailyBar = ({ day, maxTotal }: { day: DailyStats; maxTotal: number }) => {
           className="w-full bg-red-400 rounded-t-sm"
           style={{ height: `${distractingHeight}%` }}
         />
-        <div
-          className="w-full bg-amber-400"
-          style={{ height: `${neutralHeight}%` }}
-        />
+        <div className="w-full bg-amber-400" style={{ height: `${neutralHeight}%` }} />
         <div
           className="w-full bg-green-500 rounded-b-sm"
           style={{ height: `${productiveHeight}%` }}
@@ -54,11 +49,11 @@ export const WeeklyStatsView = ({ stats }: WeeklyStatsViewProps) => {
     (stats?.total_neutral_secs ?? 0) +
     (stats?.total_distracting_secs ?? 0);
 
-  const maxDayTotal = stats?.daily_stats?.reduce((max, day) => {
-    const dayTotal =
-      day.productive_secs + day.neutral_secs + day.distracting_secs;
-    return Math.max(max, dayTotal);
-  }, 0) ?? 0;
+  const maxDayTotal =
+    stats?.daily_stats?.reduce((max, day) => {
+      const dayTotal = day.productive_secs + day.neutral_secs + day.distracting_secs;
+      return Math.max(max, dayTotal);
+    }, 0) ?? 0;
 
   return (
     <>

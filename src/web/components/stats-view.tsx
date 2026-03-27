@@ -1,8 +1,8 @@
-import { Card, CardHeader, CardBody, CardTitle, Typography } from "@/components/ui";
-import { StatRow } from "./stat-row";
+import { Card, CardBody, CardHeader, CardTitle, Typography } from "@/components/ui";
+import type { TauriStats } from "@/types/api";
 import { AppListItem } from "./app-list-item";
 import { ProductivityPieChart } from "./productivity-pie-chart";
-import type { TauriStats } from "@/types/api";
+import { StatRow } from "./stat-row";
 
 export type StatsViewProps = {
   stats: TauriStats | null;
@@ -10,9 +10,7 @@ export type StatsViewProps = {
 
 export const StatsView = ({ stats }: StatsViewProps) => {
   const total =
-    (stats?.productive_secs ?? 0) +
-    (stats?.neutral_secs ?? 0) +
-    (stats?.distracting_secs ?? 0);
+    (stats?.productive_secs ?? 0) + (stats?.neutral_secs ?? 0) + (stats?.distracting_secs ?? 0);
 
   return (
     <>

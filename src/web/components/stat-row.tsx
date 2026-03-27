@@ -1,6 +1,6 @@
-import { Typography, ProgressBar } from "@/components/ui";
-import { formatTime } from "@/utils/formatters";
+import { ProgressBar, Typography } from "@/components/ui";
 import type { ProductivityVariant } from "@/types/api";
+import { formatTime } from "@/utils/formatters";
 
 export type StatRowProps = {
   label: string;

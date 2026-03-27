@@ -1,15 +1,16 @@
 // UI Component Library
-export { Button, buttonVariants, type ButtonProps } from "./button";
-export { Typography, typographyVariants, type TypographyProps } from "./typography";
+
+export { Badge, type BadgeProps, badgeVariants } from "./badge";
+export { Button, type ButtonProps, buttonVariants } from "./button";
 export {
   Card,
-  CardHeader,
   CardBody,
-  CardTitle,
-  type CardProps,
-  type CardHeaderProps,
   type CardBodyProps,
+  CardHeader,
+  type CardHeaderProps,
+  type CardProps,
+  CardTitle,
   type CardTitleProps,
 } from "./card";
-export { ProgressBar, progressBarVariants, type ProgressBarProps } from "./progress-bar";
-export { Badge, badgeVariants, type BadgeProps } from "./badge";
+export { ProgressBar, type ProgressBarProps, progressBarVariants } from "./progress-bar";
+export { Typography, type TypographyProps, typographyVariants } from "./typography";

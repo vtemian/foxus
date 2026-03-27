@@ -1,6 +1,6 @@
 import { invoke } from "@tauri-apps/api/core";
-import { useState, useEffect, useCallback, useRef } from "react";
-import type { TauriStats, FocusState, WeeklyStats } from "@/types/api";
+import { useCallback, useEffect, useRef, useState } from "react";
+import type { FocusState, TauriStats, WeeklyStats } from "@/types/api";
 
 const REFRESH_INTERVAL = 5000; // 5 seconds
 
@@ -95,5 +95,14 @@ export const useTauri = (): UseTauriReturn => {
     return () => clearInterval(interval);
   }, [refresh]);
 
-  return { stats, weeklyStats, focusState, isLoading, error, toggleFocus, loadWeeklyStats, refresh };
+  return {
+    stats,
+    weeklyStats,
+    focusState,
+    isLoading,
+    error,
+    toggleFocus,
+    loadWeeklyStats,
+    refresh,
+  };
 };

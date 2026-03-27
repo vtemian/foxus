@@ -1,7 +1,7 @@
 import { useState } from "react";
+import { Badge, Card, Typography } from "@/components/ui";
 import { useSettings } from "@/hooks/use-settings";
-import { Typography, Card, Badge } from "@/components/ui";
-import type { Category, Rule, ProductivityLevel, MatchType } from "@/types/api";
+import type { Category, MatchType, ProductivityLevel, Rule } from "@/types/api";
 import { productivityToVariant } from "@/types/api";
 
 type Tab = "categories" | "rules";
@@ -30,6 +30,7 @@ export const SettingsView = ({ onClose }: SettingsViewProps) => {
       <div className="flex items-center justify-between">
         <Typography variant="h2">Settings</Typography>
         <button
+          type="button"
           onClick={onClose}
           className="font-mono text-xs text-gray-400 hover:text-gray-600 px-2 py-1"
           aria-label="Close settings"
@@ -40,16 +41,10 @@ export const SettingsView = ({ onClose }: SettingsViewProps) => {
 
       {/* Tab navigation */}
       <div className="flex gap-2 border-b border-gray-250 pb-2">
-        <TabButton
-          active={activeTab === "categories"}
-          onClick={() => setActiveTab("categories")}
-        >
+        <TabButton active={activeTab === "categories"} onClick={() => setActiveTab("categories")}>
           Categories
         </TabButton>
-        <TabButton
-          active={activeTab === "rules"}
-          onClick={() => setActiveTab("rules")}
-        >
+        <TabButton active={activeTab === "rules"} onClick={() => setActiveTab("rules")}>
           Rules
         </TabButton>
       </div>
@@ -92,6 +87,7 @@ type TabButtonProps = {
 
 const TabButton = ({ active, onClick, children }: TabButtonProps) => (
   <button
+    type="button"
     onClick={onClick}
     className={`font-mono text-xs uppercase tracking-wide px-3 py-1 transition-colors ${
       active
@@ -111,7 +107,12 @@ type CategoriesTabProps = {
   deleteCategory: (id: number) => Promise<void>;
 };
 
-const CategoriesTab = ({ categories, createCategory, updateCategory, deleteCategory }: CategoriesTabProps) => {
+const CategoriesTab = ({
+  categories,
+  createCategory,
+  updateCategory,
+  deleteCategory,
+}: CategoriesTabProps) => {
   const [editingId, setEditingId] = useState<number | null>(null);
   const [isAdding, setIsAdding] = useState(false);
 
@@ -120,6 +121,7 @@ const CategoriesTab = ({ categories, createCategory, updateCategory, deleteCateg
       {/* Add button */}
       {!isAdding && (
         <button
+          type="button"
           onClick={() => setIsAdding(true)}
           className="font-mono text-[10px] text-gray-400 hover:text-gray-600 px-2 py-1"
         >
@@ -250,8 +252,19 @@ const CategoryForm = ({ initial, onSave, onCancel }: CategoryFormProps) => {
 type RulesTabProps = {
   rules: Rule[];
   categories: Category[];
-  createRule: (pattern: string, matchType: MatchType, categoryId: number, priority: number) => Promise<void>;
-  updateRule: (id: number, pattern: string, matchType: MatchType, categoryId: number, priority: number) => Promise<void>;
+  createRule: (
+    pattern: string,
+    matchType: MatchType,
+    categoryId: number,
+    priority: number,
+  ) => Promise<void>;
+  updateRule: (
+    id: number,
+    pattern: string,
+    matchType: MatchType,
+    categoryId: number,
+    priority: number,
+  ) => Promise<void>;
   deleteRule: (id: number) => Promise<void>;
 };
 
@@ -268,6 +281,7 @@ const RulesTab = ({ rules, categories, createRule, updateRule, deleteRule }: Rul
       {/* Add button */}
       {!isAdding && (
         <button
+          type="button"
           onClick={() => setIsAdding(true)}
           className="font-mono text-[10px] text-gray-400 hover:text-gray-600 px-2 py-1"
         >
@@ -342,14 +356,21 @@ const RulesTab = ({ rules, categories, createRule, updateRule, deleteRule }: Rul
 type RuleFormProps = {
   initial?: Rule;
   categories: Category[];
-  onSave: (pattern: string, matchType: MatchType, categoryId: number, priority: number) => Promise<void>;
+  onSave: (
+    pattern: string,
+    matchType: MatchType,
+    categoryId: number,
+    priority: number,
+  ) => Promise<void>;
   onCancel: () => void;
 };
 
 const RuleForm = ({ initial, categories, onSave, onCancel }: RuleFormProps) => {
   const [pattern, setPattern] = useState(initial?.pattern ?? "");
   const [matchType, setMatchType] = useState<MatchType>(initial?.match_type ?? "app");
-  const [categoryId, setCategoryId] = useState<number>(initial?.category_id ?? categories[0]?.id ?? 0);
+  const [categoryId, setCategoryId] = useState<number>(
+    initial?.category_id ?? categories[0]?.id ?? 0,
+  );
   const [priority, setPriority] = useState(initial?.priority ?? 10);
   const [saving, setSaving] = useState(false);
 
@@ -436,6 +457,7 @@ type IconButtonProps = {
 
 const IconButton = ({ onClick, label, children }: IconButtonProps) => (
   <button
+    type="button"
     onClick={onClick}
     aria-label={label}
     className="font-mono text-[10px] text-gray-400 hover:text-gray-600 w-5 h-5 flex items-center justify-center"

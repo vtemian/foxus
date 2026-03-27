@@ -44,7 +44,7 @@
   /* ----------------------------------------
    * Typography
    * ---------------------------------------- */
-  --font-family-mono: 'IBM Plex Mono', 'SF Mono', 'Monaco', 'Inconsolata', 'Fira Mono', monospace;
+  --font-family-mono: "IBM Plex Mono", "SF Mono", "Monaco", "Inconsolata", "Fira Mono", monospace;
 
   /* ----------------------------------------
    * Container
@@ -58,7 +58,7 @@
 @utility noise-overlay {
   position: relative;
   &::before {
-    content: '';
+    content: "";
     position: fixed;
     top: 0;
     left: 0;

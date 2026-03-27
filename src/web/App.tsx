@@ -1,16 +1,17 @@
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import "@/static/css/globals.css";
 
-import { useTauri } from "@/hooks/use-tauri";
-import { Button, Typography } from "@/components/ui";
-import { Header } from "@/components/header";
-import { StatsView } from "@/components/stats-view";
-import { WeeklyStatsView } from "@/components/weekly-stats-view";
 import { FocusView } from "@/components/focus-view";
+import { Header } from "@/components/header";
 import { SettingsView } from "@/components/settings-view";
+import { StatsView } from "@/components/stats-view";
+import { Button, Typography } from "@/components/ui";
+import { WeeklyStatsView } from "@/components/weekly-stats-view";
+import { useTauri } from "@/hooks/use-tauri";
 
-export default function App() {
-  const { stats, weeklyStats, focusState, isLoading, error, toggleFocus, loadWeeklyStats } = useTauri();
+export function App() {
+  const { stats, weeklyStats, focusState, isLoading, error, toggleFocus, loadWeeklyStats } =
+    useTauri();
   const [period, setPeriod] = useState<"today" | "week">("today");
   const [showSettings, setShowSettings] = useState(false);
 
@@ -63,9 +64,7 @@ export default function App() {
           <>
             {!isFocusActive && period === "today" && <StatsView stats={stats} />}
             {!isFocusActive && period === "week" && <WeeklyStatsView stats={weeklyStats} />}
-            {isFocusActive && (
-              <FocusView budgetRemaining={focusState?.budget_remaining ?? 0} />
-            )}
+            {isFocusActive && <FocusView budgetRemaining={focusState?.budget_remaining ?? 0} />}
 
             <footer className="mt-4">
               <Button
